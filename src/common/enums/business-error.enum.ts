@@ -16,4 +16,6 @@ export enum BusinessError {
   ROLE_NOT_FOUND = 12001,         // 角色不存在
   
   // 其他业务错误码...
+  // 账本
+  DEFAULT_BOOK_DELETE=13001,   默认账本
 }

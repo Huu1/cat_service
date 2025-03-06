@@ -13,7 +13,7 @@ async function bootstrap() {
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000, // 15分钟
-      max: 100, // 限制每个IP 15分钟内最多100个请求
+      max: 1000, // 限制每个IP 15分钟内最多100个请求
     }),
   );
 

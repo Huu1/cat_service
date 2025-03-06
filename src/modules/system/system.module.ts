@@ -4,9 +4,13 @@ import { SystemController } from './system.controller';
 import { SystemService } from './system.service';
 import { User } from '../user/entities/user.entity';
 import { Role } from '../user/entities/role.entity';
+import { Category } from '../category/entities/category.entity';
+import { AccountTemplate } from '../account-template/entities/account-template.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Role])],
+  imports: [
+    TypeOrmModule.forFeature([User, Role, Category, AccountTemplate]),
+  ],
   controllers: [SystemController],
   providers: [SystemService],
 })

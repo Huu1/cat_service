@@ -9,8 +9,8 @@ export class CaptchaService {
   async generate(key: string) {
     const captcha = svgCaptcha.create({
       size: 4,
-      noise: 2,
-      color: true,
+      noise: 1,
+      color: false,
       background: '#ffffff'
     });
 
