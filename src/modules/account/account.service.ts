@@ -5,12 +5,14 @@ import { Account } from './entities/account.entity';
 import { CreateAccountDto, UpdateAccountDto } from './dto/account.dto';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { BusinessError } from 'src/common/enums/business-error.enum';
+import { AccountTemplateService } from '../account-template/account-template.service';
 
 @Injectable()
 export class AccountService {
   constructor(
     @InjectRepository(Account)
     private accountRepository: Repository<Account>,
+    private accountTemplateService: AccountTemplateService,
   ) {}
 
   async create(userId: number, createAccountDto: CreateAccountDto) {
@@ -80,10 +82,38 @@ export class AccountService {
   }
 
   async remove(userId: number, id: number) {
-    const account = await this.findOne(userId, id);
-    if (account.isDefault) {
-      throw new BusinessException(BusinessError.FORBIDDEN, '不能删除默认账户');
+    const account = await this.accountRepository.findOne({
+      where: { id, user: { id: userId } },
+      relations: ['records']
+    });
+
+    if (!account) {
+      throw new BusinessException(BusinessError.NOT_FOUND, '账户不存在');
     }
-    return this.accountRepository.remove(account);
+
+    if (account.records?.length > 0) {
+      throw new BusinessException(BusinessError.COMMON_ERROR, '该账户下存在记录，无法删除');
+    }
+
+    await this.accountRepository.softRemove(account);
+    return { message: '删除成功' };
+  }
+
+  // 新增方法：从模板创建账户
+  async createFromTemplate(userId: number, bookId: number, templateId: number, name?: string) {
+    // 获取模板
+    const template = await this.accountTemplateService.copyTemplate(templateId);
+    
+    // 创建新账户
+    const account = this.accountRepository.create({
+      name: name || template.name,
+      icon: template.icon,
+      balance: 0, // 新账户余额默认为0
+      type: template.type,
+      user: { id: userId },
+      book: { id: bookId }
+    });
+    
+    return this.accountRepository.save(account);
   }
 }

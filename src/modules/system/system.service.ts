@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { User } from '../user/entities/user.entity';
 import { Role } from '../user/entities/role.entity';
 import { Category } from '../category/entities/category.entity';
 import { CategoryType } from '../category/entities/category.entity';
 import * as bcrypt from 'bcrypt';
-import { AccountType } from '../account/entities/account.entity';
+import { AccountType } from '../account/enums/account-type.enum';
 import { AccountTemplate } from '../account-template/entities/account-template.entity';
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class SystemService {
@@ -29,14 +29,27 @@ export class SystemService {
     return await this.dataSource.transaction(async (manager) => {
       // 初始化角色
       const roles = [
-        { name: 'admin', description: '系统管理员' },
-        { name: 'user', description: '普通用户' },
+        { 
+          code: 'super_admin',
+          name: '超级管理员', 
+          description: '系统超级管理员，拥有所有权限' 
+        },
+        { 
+          code: 'admin',
+          name: '管理员', 
+          description: '系统管理员，拥有大部分权限' 
+        },
+        { 
+          code: 'user',
+          name: '普通用户', 
+          description: '普通用户，拥有基本权限' 
+        },
       ];
 
       const savedRoles = [];
       for (const roleData of roles) {
         const existingRole = await manager.findOne(Role, {
-          where: { name: roleData.name },
+          where: { code: roleData.code },
         });
 
         if (existingRole) {
@@ -48,8 +61,30 @@ export class SystemService {
         }
       }
 
-      // 初始化管理员用户
-      const adminRole = savedRoles.find((role) => role.name === 'admin');
+      // 初始化超级管理员
+      const superAdminRole = savedRoles.find((role) => role.code === 'super_admin');
+      const superAdminUsername = this.configService.get('SUPER_ADMIN_USERNAME', 'superadmin');
+      const existingSuperAdmin = await manager.findOne(User, {
+        where: { username: superAdminUsername },
+      });
+
+      if (!existingSuperAdmin && superAdminRole) {
+        const salt = await bcrypt.genSalt();
+        const hashedPassword = await bcrypt.hash(
+          this.configService.get('SUPER_ADMIN_PASSWORD', 'superadmin'),
+          salt,
+        );
+
+        await manager.save(User, {
+          username: superAdminUsername,
+          password: hashedPassword,
+          isActive: true,
+          roles: [superAdminRole],
+        });
+      }
+
+      // 初始化管理员
+      const adminRole = savedRoles.find((role) => role.code === 'admin');
       const adminUsername = this.configService.get('ADMIN_USERNAME', 'admin');
       const existingAdmin = await manager.findOne(User, {
         where: { username: adminUsername },
@@ -244,6 +279,7 @@ export class SystemService {
         message: '系统初始化成功',
         data: {
           roles: savedRoles,
+          superAdminUsername,
           adminUsername,
         },
       };

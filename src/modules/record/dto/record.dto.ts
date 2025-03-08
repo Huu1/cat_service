@@ -5,13 +5,13 @@ import { Type } from 'class-transformer';
 
 export class CreateRecordDto {
 
-  @ApiProperty({ description: '金额' })
+  @ApiProperty({ description: '金额', example: 100.00 })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)
   @Type(() => Number)
   amount: number;
 
-  @ApiProperty({ description: '记账日期' })
+  @ApiProperty({ description: '记账日期', example: '2024-03-08' })
   @Type(() => Date)
   @IsDate()
   @IsNotFutureDate()

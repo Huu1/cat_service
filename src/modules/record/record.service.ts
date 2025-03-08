@@ -20,12 +20,13 @@ export class RecordService {
   ) {}
 
   async create(userId: number, createRecordDto: CreateRecordDto) {
-    const { bookId, accountId, categoryId, type, amount, ...recordData } = createRecordDto;
+    const { bookId, accountId, categoryId, type, amount, ...recordData } =
+      createRecordDto;
 
-    return await this.dataSource.transaction(async manager => {
+    return await this.dataSource.transaction(async (manager) => {
       // 验证分类类型
       const category = await manager.findOne(Category, {
-        where: { id: categoryId }
+        where: { id: categoryId },
       });
 
       if (!category) {
@@ -33,12 +34,15 @@ export class RecordService {
       }
 
       if ((category.type as any) !== type) {
-        throw new BusinessException(BusinessError.COMMON_ERROR, '分类类型与记录类型不匹配');
+        throw new BusinessException(
+          BusinessError.COMMON_ERROR,
+          '分类类型与记录类型不匹配',
+        );
       }
 
       // 检查并更新账户余额
       const account = await manager.findOne(Account, {
-        where: { id: accountId, user: { id: userId } }
+        where: { id: accountId, user: { id: userId } },
       });
 
       if (!account) {
@@ -56,10 +60,12 @@ export class RecordService {
       // 创建记录
       const record = manager.create(Record, {
         ...recordData,
+        type,      // 添加 type
+        amount,    // 添加 amount
         user: { id: userId },
         book: { id: bookId },
         account: { id: accountId },
-        category: { id: categoryId }
+        category: { id: categoryId },
       });
 
       return manager.save(record);
@@ -77,12 +83,12 @@ export class RecordService {
       relations: {
         account: true,
         category: true,
-        book: true
+        book: true,
       },
       order: {
         recordDate: 'DESC',
-        createdAt: 'DESC'
-      }
+        createdAt: 'DESC',
+      },
     });
   }
 
@@ -92,8 +98,8 @@ export class RecordService {
       relations: {
         account: true,
         category: true,
-        book: true
-      }
+        book: true,
+      },
     });
 
     if (!record) {
@@ -109,16 +115,31 @@ export class RecordService {
     const record = await this.findOne(userId, id);
     const { bookId, accountId, categoryId, ...updateData } = updateRecordDto;
 
-    return await this.dataSource.transaction(async manager => {
+    return await this.dataSource.transaction(async (manager) => {
       // 如果金额或类型发生变化，需要调整账户余额
-      if (updateData.amount !== record.amount || updateData.type !== record.type) {
+      if (
+        updateData.amount !== record.amount ||
+        updateData.type !== record.type
+      ) {
         // 恢复原账户余额
-        const oldAmountChange = record.type === 'income' ? -record.amount : record.amount;
-        await manager.increment(Account, { id: record.account.id }, 'balance', oldAmountChange);
+        const oldAmountChange =
+          record.type === 'income' ? -record.amount : record.amount;
+        await manager.increment(
+          Account,
+          { id: record.account.id },
+          'balance',
+          oldAmountChange,
+        );
 
         // 设置新账户余额
-        const newAmountChange = updateData.type === 'income' ? updateData.amount : -updateData.amount;
-        await manager.increment(Account, { id: accountId || record.account.id }, 'balance', newAmountChange);
+        const newAmountChange =
+          updateData.type === 'income' ? updateData.amount : -updateData.amount;
+        await manager.increment(
+          Account,
+          { id: accountId || record.account.id },
+          'balance',
+          newAmountChange,
+        );
       }
 
       return manager.save(Record, {
@@ -126,7 +147,7 @@ export class RecordService {
         ...updateData,
         book: bookId ? { id: bookId } : record.book,
         account: accountId ? { id: accountId } : record.account,
-        category: categoryId ? { id: categoryId } : record.category
+        category: categoryId ? { id: categoryId } : record.category,
       });
     });
   }
@@ -134,13 +155,18 @@ export class RecordService {
   async remove(userId: number, id: number) {
     const record = await this.findOne(userId, id);
 
-    // 使用事务处理记录删除和账户余额恢复
-    return await this.dataSource.transaction(async manager => {
+    return await this.dataSource.transaction(async (manager) => {
       // 恢复账户余额
-      const amountChange = record.type === 'income' ? -record.amount : record.amount;
-      await manager.increment(Account, { id: record.account.id }, 'balance', amountChange);
+      const amountChange =
+        record.type === 'income' ? -record.amount : record.amount;
+      await manager.increment(
+        Account,
+        { id: record.account.id },
+        'balance',
+        amountChange,
+      );
 
-      return manager.remove(record);
+      return await manager.softRemove(record);
     });
   }
 }

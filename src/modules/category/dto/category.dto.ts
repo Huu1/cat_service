@@ -1,7 +1,8 @@
 import { IsString, IsEnum, IsOptional, IsNumber } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, PartialType, OmitType } from '@nestjs/swagger';
 import { CategoryType } from '../entities/category.entity';
 
+// CreateCategoryDto 保持不变
 export class CreateCategoryDto {
   @ApiProperty({ description: '分类名称' })
   @IsString()
@@ -22,4 +23,8 @@ export class CreateCategoryDto {
   sort?: number;
 }
 
-export class UpdateCategoryDto extends CreateCategoryDto {}
+// 先创建一个不包含 type 的基础 DTO
+export class CategoryWithoutTypeDto extends OmitType(CreateCategoryDto, ['type'] as const) {}
+
+// 然后基于这个 DTO 创建更新 DTO
+export class UpdateCategoryDto extends PartialType(CategoryWithoutTypeDto) {}

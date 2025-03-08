@@ -1,6 +1,6 @@
 import { IsString, IsEnum, IsOptional, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { AccountType } from '../../account/entities/account.entity';
+import { AccountType } from '../../account/enums/account-type.enum';
 
 export class CreateAccountTemplateDto {
   @ApiProperty({ description: '模板名称' })

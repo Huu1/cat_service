@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Body, Controller, Get, Put, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -20,5 +20,27 @@ export class UserController {
   @Roles('user')
   getProfile(@CurrentUser() user: JwtPayload) {
     return this.userService.findById(user.userId);
+  }
+
+  @Get()
+  @Roles('admin', 'super_admin')
+  @ApiOperation({ summary: '获取用户列表' })
+  @ApiQuery({
+    name: 'username',
+    required: false,
+    type: String,
+    description: '用户名搜索'
+  })
+  @ApiQuery({
+    name: 'roleCode',
+    required: false,
+    type: String,
+    description: '角色编码'
+  })
+  findAll(
+    @Query('username') username?: string,
+    @Query('roleCode') roleCode?: string
+  ) {
+    return this.userService.findAll({ username, roleCode });
   }
 }

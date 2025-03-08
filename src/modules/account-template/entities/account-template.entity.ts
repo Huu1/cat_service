@@ -1,6 +1,7 @@
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
-import { AccountType } from '../../account/entities/account.entity';
+import { Account } from '../../account/entities/account.entity';
+import { AccountType } from '../../account/enums/account-type.enum';
 
 @Entity('account_templates')
 export class AccountTemplate extends BaseEntity {
@@ -14,11 +15,17 @@ export class AccountTemplate extends BaseEntity {
 
   @Column({
     type: 'enum',
-    enum: AccountType
+    enum: AccountType,
+    default: AccountType.CASH,  // 添加默认值
+    comment: '账户类型'
   })
   type: AccountType;
 
-  @Column({ nullable: true })
+  @Column({ 
+    nullable: true,
+    length: 100,
+    comment: '图标'
+  })
   icon: string;
 
   @Column({ type: 'text', nullable: true })
@@ -26,4 +33,7 @@ export class AccountTemplate extends BaseEntity {
 
   @Column({ default: 0 })
   sort: number;
+
+  @OneToMany(() => Account, account => account.template)
+  accounts: Account[];
 }

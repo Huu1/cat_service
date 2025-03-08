@@ -1,4 +1,11 @@
-import { Controller, Post, Body, UnauthorizedException, Req, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UnauthorizedException,
+  Req,
+  Get,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CaptchaService } from './captcha.service';
@@ -27,8 +34,14 @@ export class AuthController {
   @ApiOperation({ summary: '账号密码验证码登录' })
   @Post('captcha-login')
   async captchaLogin(@Body() loginDto: LoginDto) {
-    await this.authService.validateCaptcha(loginDto.captchaKey, loginDto.captcha);
-    const user = await this.authService.validateUser(loginDto.username, loginDto.password);
+    await this.authService.validateCaptcha(
+      loginDto.captchaKey,
+      loginDto.captcha,
+    );
+    const user = await this.authService.validateUser(
+      loginDto.username,
+      loginDto.password,
+    );
     return this.authService.login(user);
   }
 
@@ -61,10 +74,14 @@ export class AuthController {
   @ApiOperation({ summary: '微信小程序登录' })
   @ApiResponse({ status: 200, description: '登录成功' })
   @Post('login/wechat')
-  async loginWithWechat(@Body() wechatLoginDto: WechatLoginDto, @Req() request: Request) {
-    
-    const { user, access_token } = await this.authService.loginWithWechat(wechatLoginDto.code);
-    
+  async loginWithWechat(
+    @Body() wechatLoginDto: WechatLoginDto,
+    @Req() request: Request,
+  ) {
+    const { user, access_token } = await this.authService.loginWithWechat(
+      wechatLoginDto.code,
+    );
+
     // 记录微信登录日志
     await this.logService.create({
       userId: user.id,

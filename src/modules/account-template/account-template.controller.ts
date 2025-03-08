@@ -4,7 +4,7 @@ import { CreateAccountTemplateDto, UpdateAccountTemplateDto } from './dto/accoun
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { AccountType } from '../account/entities/account.entity';
+import { AccountType } from '../account/enums/account-type.enum';
 import { AccountTemplateService } from './account-template.service';
 
 @ApiTags('账户模板')
@@ -30,8 +30,17 @@ export class AccountTemplateController {
     required: false,
     description: '账户类型（可选）'
   })
-  findAll(@Query('type') type?: AccountType) {
-    return this.accountTemplateService.findAll(type);
+  @ApiQuery({
+    name: 'name',
+    type: String,
+    required: false,
+    description: '模板名称（可选）'
+  })
+  findAll(
+    @Query('type') type?: AccountType,
+    @Query('name') name?: string
+  ) {
+    return this.accountTemplateService.findAll({ type, name });
   }
 
   @Put(':id')

@@ -5,6 +5,7 @@ import { CreateAccountDto, UpdateAccountDto } from './dto/account.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { CreateFromTemplateDto } from './dto/create-from-template.dto';
 
 @ApiTags('账户')
 @ApiBearerAuth()
@@ -56,5 +57,19 @@ export class AccountController {
     @Param('id') id: string
   ) {
     return this.accountService.remove(user.userId, +id);
+  }
+
+  @Post('from-template')
+  @ApiOperation({ summary: '从模板创建账户' })
+  createFromTemplate(
+    @CurrentUser() user: JwtPayload,
+    @Body() createFromTemplateDto: CreateFromTemplateDto
+  ) {
+    return this.accountService.createFromTemplate(
+      user.userId, 
+      createFromTemplateDto.bookId, 
+      createFromTemplateDto.templateId,
+      createFromTemplateDto.name
+    );
   }
 }

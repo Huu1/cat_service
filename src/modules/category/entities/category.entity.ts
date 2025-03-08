@@ -24,7 +24,11 @@ export class Category extends BaseEntity {
   })
   type: CategoryType;
 
-  @Column({ nullable: true })
+  @Column({ 
+    nullable: true,
+    length: 100,
+    comment: '图标'
+  })
   icon: string;
 
   @Column({ default: 0 })

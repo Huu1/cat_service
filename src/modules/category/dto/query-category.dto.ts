@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { RecordType } from '../../record/entities/record.entity';
 
@@ -11,7 +11,7 @@ export class QueryCategoryDto {
   @IsOptional()
   type?: RecordType;
 
-  @ApiPropertyOptional({ description: '分类名称' })
+  @ApiProperty({ required: false, description: '分类名称' })
   @IsString()
   @IsOptional()
   name?: string;

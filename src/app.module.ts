@@ -12,6 +12,7 @@ import { AccountModule } from './modules/account/account.module';
 import { AccountTemplateModule } from './modules/account-template/account-template.module';
 import { BookModule } from './modules/book/book.module';
 import { RecordModule } from './modules/record/record.module';
+import { StatisticsModule } from './modules/statistics/statistics.module';
 
 @Module({
   imports: [
@@ -29,7 +30,8 @@ import { RecordModule } from './modules/record/record.module';
     AccountModule,
     AccountTemplateModule,
     BookModule,
-    RecordModule
+    RecordModule,
+    StatisticsModule
   ],
 })
 export class AppModule {}

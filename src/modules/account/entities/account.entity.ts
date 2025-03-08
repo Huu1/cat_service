@@ -3,14 +3,9 @@ import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../user/entities/user.entity';
 import { Book } from '../../book/entities/book.entity';
 import { Record } from 'src/modules/record/entities/record.entity';
+import { AccountTemplate } from '../../account-template/entities/account-template.entity';
+import { AccountType } from '../enums/account-type.enum';
 
-export enum AccountType {
-  CASH = 'cash',       // 资金账户（现金、银行卡等）
-  CREDIT = 'credit',   // 信用账户（信用卡、花呗等）
-  INVESTMENT = 'investment', // 理财账户（基金、股票等）
-  RECEIVABLE = 'receivable', // 应收款项
-  PAYABLE = 'payable'   // 应付款项
-}
 
 @Entity('accounts')
 export class Account extends BaseEntity {
@@ -37,8 +32,12 @@ export class Account extends BaseEntity {
     })
     balance: number;
 
-  @Column({ nullable: true })
-  icon: string;
+    @Column({ 
+      nullable: true,
+      length: 100,
+      comment: '图标'
+    })
+    icon: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
@@ -54,4 +53,7 @@ export class Account extends BaseEntity {
 
   @OneToMany(() => Record, record => record.account)
   records: Record[];
+
+  @ManyToOne(() => AccountTemplate, template => template.accounts)
+  template: AccountTemplate;
 }

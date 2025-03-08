@@ -37,7 +37,7 @@ export class CategoryController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard)
   @Roles('admin')
   @ApiOperation({ summary: '更新分类' })
   update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
@@ -45,7 +45,7 @@ export class CategoryController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard)
   @Roles('admin')
   @ApiOperation({ summary: '删除分类' })
   remove(@Param('id') id: string) {

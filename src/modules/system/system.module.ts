@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SystemController } from './system.controller';
 import { SystemService } from './system.service';
-import { User } from '../user/entities/user.entity';
 import { Role } from '../user/entities/role.entity';
 import { Category } from '../category/entities/category.entity';
 import { AccountTemplate } from '../account-template/entities/account-template.entity';
+import { User } from '../user/entities/user.entity';
 
 @Module({
   imports: [

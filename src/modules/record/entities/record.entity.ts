@@ -23,7 +23,8 @@ export class Record extends BaseEntity {
   @Column('decimal', { 
     precision: 10, 
     scale: 2,
-    comment: '记录金额'
+    comment: '记录金额',
+    nullable: false
   })
   amount: number;
 
