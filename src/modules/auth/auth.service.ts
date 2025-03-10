@@ -76,12 +76,15 @@ export class AuthService {
       let user = await this.userService.findByOpenid(openid);
 
       if (!user) {
-        // 生成默认用户名
+        // 生成默认用户名和随机密码
         const username = `wx_${openid.slice(-8)}`;
+        const password = this.generateRandomPassword();
+        
         user = await this.userService.createWithRole(
           { 
             openid,
             username,
+            password, // 添加密码
             isActive: true 
           }, 
           ['user']
@@ -95,8 +98,22 @@ export class AuthService {
       };
     } catch (error) {
       console.log(error);
-      
       throw new UnauthorizedException('微信登录失败');
     }
+  }
+  
+  // 删除不需要的 wxLogin 方法，使用上面的 loginWithWechat 方法代替
+  
+  // 生成随机密码
+  private generateRandomPassword(): string {
+    const length = 16;
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()';
+    let password = '';
+    
+    for (let i = 0; i < length; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    
+    return password;
   }
 }

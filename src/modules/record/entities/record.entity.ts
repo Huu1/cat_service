@@ -62,7 +62,7 @@ export class Record extends BaseEntity {
 
   @Index('idx_record_date')
   @Column({ 
-    type: 'date',
+    type: 'timestamp',  // 改为 timestamp 类型
     comment: '记账日期'
   })
   recordDate: Date;

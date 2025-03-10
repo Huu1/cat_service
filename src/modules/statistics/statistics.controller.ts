@@ -4,9 +4,9 @@ import { StatisticsService } from './statistics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
-import { StatisticsQueryDto } from './dto/statistics.dto';
+import { StatisticsDetailQueryDto, StatisticsQueryDto } from './dto/statistics.dto';
 
-@ApiTags('统计')
+@ApiTags('统计当月/当年 收入-支出-结余')
 @Controller('statistics')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -20,5 +20,14 @@ export class StatisticsController {
     @Query() query: StatisticsQueryDto
   ) {
     return this.statisticsService.getStatistics(user.userId, query);
+  }
+
+  @Get('details')
+  @ApiOperation({ summary: '获取收支明细统计' })
+  async getStatisticsDetail(
+    @CurrentUser() user: JwtPayload,
+    @Query() query: StatisticsDetailQueryDto
+  ) {
+    return this.statisticsService.getStatisticsDetail(user.userId, query);
   }
 }

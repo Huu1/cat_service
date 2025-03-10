@@ -11,11 +11,14 @@ export class CreateRecordDto {
   @Type(() => Number)
   amount: number;
 
-  @ApiProperty({ description: '记账日期', example: '2024-03-08' })
-  @Type(() => Date)
-  @IsDate()
-  @IsNotFutureDate()
-  recordDate: Date;
+  @ApiProperty({ 
+      description: '记账日期',
+      example: '2024-03-01T00:00:00.000Z'  // 添加示例格式
+    })
+    @Type(() => Date)
+    @IsDate()
+    @IsNotFutureDate()
+    recordDate: Date;
 
   @ApiProperty({ description: '备注', required: false })
   @IsString()
