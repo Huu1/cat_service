@@ -58,21 +58,20 @@ export class StatisticsService {
       queryBuilder.andWhere('MONTH(record.recordDate) = :month', { month: query.month });
     }
 
-    // 修改分组方式，使用字符串格式化确保日期一致
     const groupByFormat = query.type === StatisticsType.MONTH
       ? 'DATE_FORMAT(record.recordDate, "%Y-%m-%d")'
       : 'DATE_FORMAT(record.recordDate, "%Y-%m")';
 
-    // 现有的查询构建代码...
-    
-    // 获取总记录数
-    const totalCount = await queryBuilder.clone().getCount();
-    
+    // 先获取所有不同的日期数量
+    const dateCountQuery = queryBuilder.clone()
+      .select(`COUNT(DISTINCT ${groupByFormat})`, 'count')
+      .getRawOne();
+
     // 应用分页
     const page = query.page || 1;
     const pageSize = query.pageSize || 10;
     const skip = (page - 1) * pageSize;
-    
+
     const details = await queryBuilder
       .select([
         `${groupByFormat} AS date`,
@@ -84,11 +83,15 @@ export class StatisticsService {
         expenseType: RecordType.EXPENSE
       })
       .groupBy('date')
-      .orderBy('date', 'ASC')
-      .skip(skip)
-      .take(pageSize)
+      .orderBy('date', 'DESC')  // 改为 DESC 降序排列
+      .offset(skip)
+      .limit(pageSize)
       .getRawMany();
-    
+
+    // 获取总日期数
+    const { count } = await dateCountQuery;
+    const totalDates = Number(count);
+
     // 如果需要包含记录详情
     if (query.includeRecords) {
       for (const detail of details) {
@@ -123,17 +126,17 @@ export class StatisticsService {
         ? `${query.year}-${query.month}` 
         : `${query.year}`,
       pagination: {
-        total: totalCount,
+        total: totalDates,
         page,
         pageSize,
-        totalPages: Math.ceil(totalCount / pageSize)
+        totalPages: Math.ceil(totalDates / pageSize)
       },
       details: details.map(detail => ({
         date: detail.date,
         income: Number(Number(detail.income).toFixed(2)),
         expense: Number(Number(detail.expense).toFixed(2)),
         balance: Number((Number(detail.income) - Number(detail.expense)).toFixed(2)),
-        ...(query.includeRecords && { records: detail.records }) // 只在 includeRecords 为 true 时添加 records 字段
+        ...(query.includeRecords && { records: detail.records })
       }))
     };
   }

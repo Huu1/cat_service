@@ -1,24 +1,32 @@
-import { IsString, IsEnum, IsNumber, IsDate, IsOptional, Length, Min, registerDecorator } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsNumber,
+  IsDate,
+  IsOptional,
+  Length,
+  Min,
+  registerDecorator,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { RecordType } from '../entities/record.entity';
 import { Type } from 'class-transformer';
 
 export class CreateRecordDto {
-
-  @ApiProperty({ description: '金额', example: 100.00 })
+  @ApiProperty({ description: '金额', example: 100.0 })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)
   @Type(() => Number)
   amount: number;
 
-  @ApiProperty({ 
-      description: '记账日期',
-      example: '2024-03-01T00:00:00.000Z'  // 添加示例格式
-    })
-    @Type(() => Date)
-    @IsDate()
-    @IsNotFutureDate()
-    recordDate: Date;
+  @ApiProperty({
+    description: '记账日期',
+    example: '2024-03-01T00:00:00.000Z', // 添加示例格式
+  })
+  @Type(() => Date)
+  @IsDate()
+  @IsNotFutureDate()
+  recordDate: Date;
 
   @ApiProperty({ description: '备注', required: false })
   @IsString()

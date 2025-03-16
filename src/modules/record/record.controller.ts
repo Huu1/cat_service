@@ -15,18 +15,30 @@ export class RecordController {
   constructor(private readonly recordService: RecordService) {}
 
   @Post()
-  @ApiOperation({ summary: '创建记账记录' })
+  @ApiOperation({ summary: '创建或更新记账记录' })
   @ApiResponse({
     status: 201,
     description: '创建成功',
     type: Record
   })
+  @ApiResponse({
+    status: 200,
+    description: '更新成功',
+    type: Record
+  })
   @ApiResponse({ status: 400, description: '参数错误' })
-  create(
+  @ApiResponse({ status: 404, description: '记录不存在（更新时）' })
+  createOrUpdate(
     @CurrentUser() user: JwtPayload,
-    @Body() createRecordDto: CreateRecordDto
+    @Body() recordDto: CreateRecordDto & { id?: number }
   ) {
-    return this.recordService.create(user.userId, createRecordDto);
+    if (recordDto.id) {
+      // 有ID，执行更新操作
+      return this.recordService.update(user.userId, recordDto.id, recordDto);
+    } else {
+      // 无ID，执行创建操作
+      return this.recordService.create(user.userId, recordDto);
+    }
   }
 
   @Get()
@@ -68,6 +80,8 @@ export class RecordController {
     return this.recordService.findOne(user.userId, +id);
   }
 
+  // 可以删除原有的 Put 方法，因为已经合并到 Post 方法中
+  // 或者保留 Put 方法作为兼容，调用相同的逻辑
   @Put(':id')
   @ApiOperation({ summary: '更新记账记录' })
   @ApiParam({
@@ -89,7 +103,7 @@ export class RecordController {
     return this.recordService.update(user.userId, +id, updateRecordDto);
   }
 
-  @Delete(':id')
+  @Post(':id')
   @ApiOperation({ summary: '删除记账记录' })
   @ApiParam({
     name: 'id',

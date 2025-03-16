@@ -19,6 +19,12 @@ export class BookController {
     return this.bookService.create(user.userId, createBookDto);
   }
 
+  @ApiOperation({ summary: '获取默认账本' })
+  @Get('default')
+  getDefaultBook(@CurrentUser() user: JwtPayload) {
+    return this.bookService.getDefaultBook(user.userId);
+  }
+
   @ApiOperation({ summary: '获取所有账本' })
   @Get()
   findAll(@CurrentUser() user: JwtPayload) {

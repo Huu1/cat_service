@@ -93,4 +93,20 @@ export class BookService {
 
     return this.bookRepository.softRemove(book);
   }
+
+  async getDefaultBook(userId: number) {
+      const book = await this.bookRepository.findOne({
+        where: {
+          user: { id: userId },
+          isDefault: true
+        },
+        relations: ['user']
+      });
+  
+      if (!book) {
+        throw new BusinessException(BusinessError.NOT_FOUND, '默认账本不存在');
+      }
+  
+      return book;
+    }
 }
