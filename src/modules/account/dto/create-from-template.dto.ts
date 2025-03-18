@@ -14,4 +14,14 @@ export class CreateFromTemplateDto {
   @IsString()
   @IsOptional()
   name?: string;
+
+  @ApiProperty({ description: '描述', required: false })
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @ApiProperty({ description: '图标', required: false })
+  @IsString()
+  @IsOptional()
+  icon?: string;
 }

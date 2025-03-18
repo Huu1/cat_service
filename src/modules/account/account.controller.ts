@@ -24,11 +24,11 @@ export class AccountController {
   }
 
   @Get()
-  @ApiOperation({ summary: '获取账户列表' })
+  @ApiOperation({ summary: '获取账户列表（按类型分组）' })
   findAll(
     @CurrentUser() user: JwtPayload
   ) {
-    return this.accountService.findAll(user.userId);
+    return this.accountService.findAllGrouped(user.userId);
   }
 
   @Get(':id')
@@ -69,7 +69,15 @@ export class AccountController {
       user.userId, 
       createFromTemplateDto.bookId, 
       createFromTemplateDto.templateId,
-      createFromTemplateDto.name
+      createFromTemplateDto.name,
+      createFromTemplateDto.description,
+      createFromTemplateDto.icon,
     );
+  }
+
+  @Get('assets/summary')
+  @ApiOperation({ summary: '获取资产概览（总资产、总负债、净资产）' })
+  getAssetsSummary(@CurrentUser() user: JwtPayload) {
+    return this.accountService.calculateAssets(user.userId);
   }
 }

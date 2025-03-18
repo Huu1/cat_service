@@ -6,6 +6,7 @@ import { CreateAccountDto, UpdateAccountDto } from './dto/account.dto';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { BusinessError } from 'src/common/enums/business-error.enum';
 import { AccountTemplateService } from '../account-template/account-template.service';
+import { AccountType } from './enums/account-type.enum';
 
 @Injectable()
 export class AccountService {
@@ -47,9 +48,48 @@ export class AccountService {
     });
   }
 
+  async findAllGrouped(userId: number) {
+    const accounts = await this.accountRepository.find({
+      where: { user: { id: userId } },
+      order: {
+        isDefault: 'DESC',
+        createdAt: 'DESC',
+      },
+      relations: ['book', 'template'],
+    });
+
+    const accountTypes = [
+      { title: '资金账户', type: AccountType.CASH },
+      { title: '信用账户', type: AccountType.CREDIT },
+      { title: '理财账户', type: AccountType.INVESTMENT },
+      { title: '应收账户', type: AccountType.RECEIVABLE },
+      { title: '应付账户', type: AccountType.PAYABLE },
+    ];
+
+    return accountTypes
+      .map((group) => {
+        const groupAccounts = accounts.filter(
+          (account) => account.type === group.type,
+        );
+        const totalBalance = groupAccounts.reduce((sum, account) => {
+          return sum + Number(account.balance || 0);
+        }, 0);
+
+        return {
+          title: group.title,
+          type: group.type,
+          accounts: groupAccounts,
+          totalBalance:
+            totalBalance === 0 ? '0.00' : Number(totalBalance.toFixed(2)), // 保留两位小数
+        };
+      })
+      .filter((group) => group.accounts.length > 0);
+  }
+
   async findOne(userId: number, id: number) {
     const account = await this.accountRepository.findOne({
       where: { id, user: { id: userId } },
+      relations: ['template'], // 添加 template 关联
     });
 
     if (!account) {
@@ -84,7 +124,7 @@ export class AccountService {
   async remove(userId: number, id: number) {
     const account = await this.accountRepository.findOne({
       where: { id, user: { id: userId } },
-      relations: ['records']
+      relations: ['records'],
     });
 
     if (!account) {
@@ -92,7 +132,10 @@ export class AccountService {
     }
 
     if (account.records?.length > 0) {
-      throw new BusinessException(BusinessError.COMMON_ERROR, '该账户下存在记录，无法删除');
+      throw new BusinessException(
+        BusinessError.COMMON_ERROR,
+        '该账户下存在记录，无法删除',
+      );
     }
 
     await this.accountRepository.softRemove(account);
@@ -100,20 +143,68 @@ export class AccountService {
   }
 
   // 新增方法：从模板创建账户
-  async createFromTemplate(userId: number, bookId: number, templateId: number, name?: string) {
+  async createFromTemplate(
+    userId: number,
+    bookId: number,
+    templateId: number,
+    name?: string,
+    description?: string,
+    icon?: string,
+  ) {
     // 获取模板
     const template = await this.accountTemplateService.copyTemplate(templateId);
-    
+
     // 创建新账户
     const account = this.accountRepository.create({
       name: name || template.name,
-      icon: template.icon,
+      icon: icon || template.icon,
       balance: 0, // 新账户余额默认为0
+      template,
       type: template.type,
+      description,
       user: { id: userId },
-      book: { id: bookId }
+      book: { id: bookId },
     });
-    
+
     return this.accountRepository.save(account);
+  }
+
+  async calculateAssets(userId: number) {
+    const accounts = await this.accountRepository.find({
+      where: { user: { id: userId } },
+    });
+
+    let totalAssets = 0;
+    let totalLiabilities = 0;
+
+    for (const account of accounts) {
+      const balance = Number(account.balance) || 0;
+
+      // 计算总资产
+      if (
+        [
+          AccountType.CASH,
+          AccountType.INVESTMENT,
+          AccountType.RECEIVABLE,
+        ].includes(account.type)
+      ) {
+        totalAssets += balance;
+      }
+
+      // 计算总负债
+      if ([AccountType.CREDIT, AccountType.PAYABLE].includes(account.type)) {
+        totalLiabilities += balance;
+      }
+    }
+
+    // 计算净资产
+    const netAssets = totalAssets - totalLiabilities;
+
+    return {
+      totalAssets: totalAssets === 0 ? '0.00' : Number(totalAssets.toFixed(2)),
+      totalLiabilities:
+        totalLiabilities === 0 ? '0.00' : Number(totalLiabilities.toFixed(2)),
+      netAssets: netAssets === 0 ? '0.00' : Number(netAssets.toFixed(2)),
+    };
   }
 }
