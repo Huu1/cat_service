@@ -39,6 +39,7 @@ export class UserService {
         name: '默认账本',
         description: '系统自动创建的默认账本',
         isDefault: true,
+        isSystemDefault: true, // 设置为系统默认账本
         user: { id: savedUser.id }
       });
 
@@ -94,47 +95,48 @@ export class UserService {
     return queryBuilder.getMany();
   }
   
-  async createOrUpdateByOpenid(openid: string, userInfo: any) {
-      // 查找是否已存在该 openid 的用户
-      let user = await this.userRepository.findOne({ where: { openid } });
+  // async createOrUpdateByOpenid(openid: string, userInfo: any) {
+  //     // 查找是否已存在该 openid 的用户
+  //     let user = await this.userRepository.findOne({ where: { openid } });
       
-      if (user) {
-        // 更新用户信息
-        // user.nickname = userInfo.nickName || user.nickname;
-        // user.avatar = userInfo.avatarUrl || user.avatar;
-        // user.gender = userInfo.gender !== undefined ? userInfo.gender : user.gender;
+  //     if (user) {
+  //       // 更新用户信息
+  //       // user.nickname = userInfo.nickName || user.nickname;
+  //       // user.avatar = userInfo.avatarUrl || user.avatar;
+  //       // user.gender = userInfo.gender !== undefined ? userInfo.gender : user.gender;
         
-        return this.userRepository.save(user);
-      } else {
-        // 使用事务创建新用户和默认账本
-        return await this.dataSource.transaction(async manager => {
-          // 生成并加密密码
-          const password = this.generateRandomPassword();
-          const salt = await bcrypt.genSalt();
-          const hashedPassword = await bcrypt.hash(password, salt);
+  //       return this.userRepository.save(user);
+  //     } else {
+  //       // 使用事务创建新用户和默认账本
+  //       return await this.dataSource.transaction(async manager => {
+  //         // 生成并加密密码
+  //         const password = this.generateRandomPassword();
+  //         const salt = await bcrypt.genSalt();
+  //         const hashedPassword = await bcrypt.hash(password, salt);
           
-          // 创建用户
-          const newUser = manager.create(User, {
-            openid,
-            password: hashedPassword,
-            username: `user_${Date.now()}`, // 添加一个默认用户名
-          });
+  //         // 创建用户
+  //         const newUser = manager.create(User, {
+  //           openid,
+  //           password: hashedPassword,
+  //           username: `user_${Date.now()}`, // 添加一个默认用户名
+  //         });
           
-          // 保存用户
-          const savedUser = await manager.save(newUser);
+  //         // 保存用户
+  //         const savedUser = await manager.save(newUser);
           
-          // 创建默认账本
-          await manager.save('Book', {
-            name: '默认账本',
-            description: '系统自动创建的默认账本',
-            isDefault: true,
-            user: { id: savedUser.id }
-          });
+  //         // 创建默认账本
+  //         await manager.save('Book', {
+  //           name: '默认账本',
+  //           description: '系统自动创建的默认账本',
+  //           isDefault: true,
+  //           isSystemDefault: true, // 设置为系统默认账本
+  //           user: { id: savedUser.id }
+  //         });
           
-          return savedUser;
-        });
-      }
-    }
+  //         return savedUser;
+  //       });
+  //     }
+  //   }
     
     // 生成随机密码
     private generateRandomPassword(): string {

@@ -6,7 +6,7 @@ import { CreateAccountDto, UpdateAccountDto } from './dto/account.dto';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { BusinessError } from 'src/common/enums/business-error.enum';
 import { AccountTemplateService } from '../account-template/account-template.service';
-import { AccountType } from './enums/account-type.enum';
+import { AccountType, AccountTypesMap } from './enums/account-type.enum';
 
 @Injectable()
 export class AccountService {
@@ -41,6 +41,7 @@ export class AccountService {
 
     return this.accountRepository.find({
       where,
+      relations: ['book', 'template'],
       order: {
         isDefault: 'DESC',
         createdAt: 'DESC',
@@ -58,32 +59,22 @@ export class AccountService {
       relations: ['book', 'template'],
     });
 
-    const accountTypes = [
-      { title: '资金账户', type: AccountType.CASH },
-      { title: '信用账户', type: AccountType.CREDIT },
-      { title: '理财账户', type: AccountType.INVESTMENT },
-      { title: '应收账户', type: AccountType.RECEIVABLE },
-      { title: '应付账户', type: AccountType.PAYABLE },
-    ];
+    return AccountTypesMap.map((group) => {
+      const groupAccounts = accounts.filter(
+        (account) => account.type === group.type,
+      );
+      const totalBalance = groupAccounts.reduce((sum, account) => {
+        return sum + Number(account.balance || 0);
+      }, 0);
 
-    return accountTypes
-      .map((group) => {
-        const groupAccounts = accounts.filter(
-          (account) => account.type === group.type,
-        );
-        const totalBalance = groupAccounts.reduce((sum, account) => {
-          return sum + Number(account.balance || 0);
-        }, 0);
-
-        return {
-          title: group.title,
-          type: group.type,
-          accounts: groupAccounts,
-          totalBalance:
-            totalBalance === 0 ? '0.00' : Number(totalBalance.toFixed(2)), // 保留两位小数
-        };
-      })
-      .filter((group) => group.accounts.length > 0);
+      return {
+        title: group.title,
+        type: group.type,
+        accounts: groupAccounts,
+        totalBalance:
+          totalBalance === 0 ? '0.00' : Number(totalBalance.toFixed(2)), // 保留两位小数
+      };
+    }).filter((group) => group.accounts.length > 0);
   }
 
   async findOne(userId: number, id: number) {
@@ -101,7 +92,7 @@ export class AccountService {
 
   async update(userId: number, id: number, updateAccountDto: UpdateAccountDto) {
     const account = await this.findOne(userId, id);
-    const { bookId, ...updateData } = updateAccountDto;
+    const { bookId, id: accountId, ...updateData } = updateAccountDto; // 解构时排除 id 字段
 
     if (updateData.isDefault) {
       await this.accountRepository.update(
@@ -150,15 +141,14 @@ export class AccountService {
     name?: string,
     description?: string,
     icon?: string,
+    balance: number = 0, // 添加初始余额参数，默认为0
   ) {
-    // 获取模板
     const template = await this.accountTemplateService.copyTemplate(templateId);
 
-    // 创建新账户
     const account = this.accountRepository.create({
       name: name || template.name,
       icon: icon || template.icon,
-      balance: 0, // 新账户余额默认为0
+      balance, // 使用传入的初始余额
       template,
       type: template.type,
       description,
@@ -206,5 +196,91 @@ export class AccountService {
         totalLiabilities === 0 ? '0.00' : Number(totalLiabilities.toFixed(2)),
       netAssets: netAssets === 0 ? '0.00' : Number(netAssets.toFixed(2)),
     };
+  }
+
+  async getAccountDetail(userId: number, id: number) {
+    const account = await this.accountRepository.findOne({
+      where: { id, user: { id: userId } },
+      relations: ['records', 'records.category', 'template', 'book'], // 添加 records.category 关联
+    });
+
+    if (!account) {
+      throw new BusinessException(BusinessError.NOT_FOUND, '账户不存在');
+    }
+
+    // 按月份对记录进行分组
+    const recordsByMonth = {};
+    account.records.forEach((record) => {
+      const monthKey = record.recordDate.toISOString().slice(0, 7);
+      const dateKey = record.recordDate.toISOString().slice(0, 10);
+
+      if (!recordsByMonth[monthKey]) {
+        recordsByMonth[monthKey] = {
+          income: 0,
+          expense: 0,
+          dailyStats: {},
+        };
+      }
+
+      if (!recordsByMonth[monthKey].dailyStats[dateKey]) {
+        recordsByMonth[monthKey].dailyStats[dateKey] = {
+          date: dateKey,
+          income: 0,
+          expense: 0,
+          records: [],
+        };
+      }
+
+      // 修正收支计算逻辑
+      const amount = Number(record.amount) || 0;
+      if (record.type === 'income') {
+        // 根据记录类型判断是收入还是支出
+        recordsByMonth[monthKey].income += amount;
+        recordsByMonth[monthKey].dailyStats[dateKey].income += amount;
+      } else if (record.type === 'expense') {
+        recordsByMonth[monthKey].expense += amount;
+        recordsByMonth[monthKey].dailyStats[dateKey].expense += amount;
+      }
+
+      recordsByMonth[monthKey].dailyStats[dateKey].records.push(record);
+    });
+
+    // 格式化返回数据
+    const monthlyStats = Object.entries(recordsByMonth).map(
+      ([month, data]: any) => ({
+        month,
+        income: Number(data.income.toFixed(2)),
+        expense: Number(data.expense.toFixed(2)),
+        dailyStats: Object.values(data.dailyStats)
+          .map((day: any) => ({
+            ...day,
+            income: Number(day.income.toFixed(2)),
+            expense: Number(day.expense.toFixed(2)),
+            records: day.records.sort(
+              (a, b) =>
+                new Date(b.recordDate).getTime() -
+                new Date(a.recordDate).getTime(), // 使用 recordDate 排序
+            ),
+          }))
+          .sort((a, b) => b.date.localeCompare(a.date)),
+      }),
+    );
+
+    return monthlyStats.sort((a, b) => b.month.localeCompare(a.month));
+
+    // return {
+    //   account: {
+    //     id: account.id,
+    //     name: account.name,
+    //     type: account.type,
+    //     balance: account.balance,
+    //     icon: account.icon,
+    //     description: account.description,
+    //     isDefault: account.isDefault,
+    //     template: account.template,
+    //     book: account.book
+    //   },
+    //   statistics: monthlyStats.sort((a, b) => b.month.localeCompare(a.month))
+    // };
   }
 }

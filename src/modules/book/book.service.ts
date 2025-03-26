@@ -30,7 +30,7 @@ export class BookService {
   async findAll(userId: number) {
     return this.bookRepository.find({
       where: { user: { id: userId } },
-      order: { isDefault: 'DESC', createdAt: 'DESC' },
+      order: { createdAt: 'ASC' },
     });
   }
 
@@ -46,20 +46,20 @@ export class BookService {
     return book;
   }
 
-  async update(userId: number, id: number, updateBookDto: UpdateBookDto) {
-    const book = await this.findOne(userId, id);
+  async update(
+    userId: number,
+    bookId: number,
+    updateBookDto: UpdateBookDto & { id?: number; isSystemDefault?: boolean },
+  ) {
+    const book = await this.findOne(userId, bookId);
 
-    if (updateBookDto.isDefault) {
-      // 如果设置为默认账本，需要取消其他账本的默认状态
-      await this.bookRepository.update(
-        { user: { id: userId }, isDefault: true },
-        { isDefault: false },
-      );
-    }
+    const { id, isSystemDefault, ...updateData } = updateBookDto;
 
     return this.bookRepository.save({
       ...book,
-      ...updateBookDto,
+      ...updateData,
+      isDefault: book.isDefault,
+      isSystemDefault: book.isSystemDefault,
     });
   }
 
@@ -70,6 +70,13 @@ export class BookService {
       throw new BusinessException(
         BusinessError.DEFAULT_BOOK_DELETE,
         '不能删除默认账本',
+      );
+    }
+
+    if (book.isSystemDefault) {
+      throw new BusinessException(
+        BusinessError.FORBIDDEN,
+        '不能删除系统默认账本',
       );
     }
 
@@ -94,19 +101,35 @@ export class BookService {
     return this.bookRepository.softRemove(book);
   }
 
+  async setDefault(userId: number, id: number) {
+    const book = await this.findOne(userId, id);
+
+    // 先将所有账本设置为非默认
+    await this.bookRepository.update(
+      { user: { id: userId }, isDefault: true },
+      { isDefault: false },
+    );
+
+    // 设置新的默认账本
+    return this.bookRepository.save({
+      ...book,
+      isDefault: true,
+    });
+  }
+
   async getDefaultBook(userId: number) {
-      const book = await this.bookRepository.findOne({
-        where: {
-          user: { id: userId },
-          isDefault: true
-        },
-        relations: ['user']
-      });
-  
-      if (!book) {
-        throw new BusinessException(BusinessError.NOT_FOUND, '默认账本不存在');
-      }
-  
-      return book;
+    const book = await this.bookRepository.findOne({
+      where: {
+        user: { id: userId },
+        isDefault: true,
+      },
+      relations: ['user'],
+    });
+
+    if (!book) {
+      throw new BusinessException(BusinessError.NOT_FOUND, '默认账本不存在');
     }
+
+    return book;
+  }
 }

@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Put,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { BookService } from './book.service';
 import { CreateBookDto, UpdateBookDto } from './dto/book.dto';
@@ -15,7 +24,10 @@ export class BookController {
 
   @ApiOperation({ summary: '创建账本' })
   @Post()
-  create(@CurrentUser() user: JwtPayload, @Body() createBookDto: CreateBookDto) {
+  create(
+    @CurrentUser() user: JwtPayload,
+    @Body() createBookDto: CreateBookDto,
+  ) {
     return this.bookService.create(user.userId, createBookDto);
   }
 
@@ -38,7 +50,7 @@ export class BookController {
   }
 
   @ApiOperation({ summary: '更新账本' })
-  @Put(':id')
+  @Post(':id/update')
   update(
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
@@ -48,8 +60,17 @@ export class BookController {
   }
 
   @ApiOperation({ summary: '删除账本' })
-  @Delete(':id')
+  @Post(':id/delete')
   remove(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.bookService.remove(user.userId, +id);
+  }
+
+  @Post(':id/default')
+  @ApiOperation({ summary: '设置默认账本' })
+  setDefault(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    return this.bookService.setDefault(user.userId, +id);
   }
 }

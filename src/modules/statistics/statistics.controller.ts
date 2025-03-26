@@ -1,5 +1,5 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { StatisticsService } from './statistics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -15,6 +15,12 @@ export class StatisticsController {
 
   @Get()
   @ApiOperation({ summary: '获取收支统计' })
+  @ApiQuery({
+    name: 'bookId',
+    required: false,
+    type: Number,
+    description: '账本ID，不传则查询所有账本',
+  })
   async getStatistics(
     @CurrentUser() user: JwtPayload,
     @Query() query: StatisticsQueryDto
@@ -24,6 +30,12 @@ export class StatisticsController {
 
   @Get('details')
   @ApiOperation({ summary: '获取收支明细统计' })
+  @ApiQuery({
+    name: 'bookId',
+    required: false,
+    type: Number,
+    description: '账本ID，不传则查询所有账本',
+  })
   async getStatisticsDetail(
     @CurrentUser() user: JwtPayload,
     @Query() query: StatisticsDetailQueryDto

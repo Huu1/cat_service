@@ -23,11 +23,25 @@ export class Book extends BaseEntity {
   })
   name: string;
 
+  @Column({ unique: false, nullable: true, length: 100, comment: '图标' })
+  icon: string;
+
+  @Column({
+    unique: false,
+    nullable: true,
+    length: 100,
+    comment: '图标背景颜色',
+  })
+  color: string;
+
   @Column({ type: 'text', nullable: true })
   description: string;
 
   @Column({ default: false })
   isDefault: boolean;
+
+  @Column({ default: false, name: 'is_system_default' })
+  isSystemDefault: boolean; // 新增字段：是否为系统创建的默认账本
 
   @ManyToOne(() => User, (user) => user.books)
   user: User;

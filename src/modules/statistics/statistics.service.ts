@@ -16,6 +16,11 @@ export class StatisticsService {
     const queryBuilder = this.recordRepository.createQueryBuilder('record')
       .where('record.user.id = :userId', { userId });
 
+    // 添加账本筛选条件
+    if (query.bookId) {
+      queryBuilder.andWhere('record.book.id = :bookId', { bookId: query.bookId });
+    }
+
     // 根据年份筛选
     queryBuilder.andWhere('YEAR(record.recordDate) = :year', { year: query.year });
 
@@ -53,6 +58,11 @@ export class StatisticsService {
     const queryBuilder = this.recordRepository.createQueryBuilder('record')
       .where('record.user.id = :userId', { userId })
       .andWhere('YEAR(record.recordDate) = :year', { year: query.year });
+
+    // 添加账本筛选条件
+    if (query.bookId) {
+      queryBuilder.andWhere('record.book.id = :bookId', { bookId: query.bookId });
+    }
 
     if (query.type === StatisticsType.MONTH && query.month) {
       queryBuilder.andWhere('MONTH(record.recordDate) = :month', { month: query.month });
@@ -95,10 +105,17 @@ export class StatisticsService {
     // 如果需要包含记录详情
     if (query.includeRecords) {
       for (const detail of details) {
-        const records = await this.recordRepository.createQueryBuilder('record')
+        const recordsQuery = this.recordRepository.createQueryBuilder('record')
           .where('record.user.id = :userId', { userId })
           .andWhere('YEAR(record.recordDate) = :year', { year: query.year })
-          .andWhere(`${groupByFormat} = :date`, { date: detail.date })
+          .andWhere(`${groupByFormat} = :date`, { date: detail.date });
+        
+        // 添加账本筛选条件
+        if (query.bookId) {
+          recordsQuery.andWhere('record.book.id = :bookId', { bookId: query.bookId });
+        }
+        
+        const records = await recordsQuery
           .leftJoinAndSelect('record.category', 'category')
           .leftJoinAndSelect('record.account', 'account')
           .select([

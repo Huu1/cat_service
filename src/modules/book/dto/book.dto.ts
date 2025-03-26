@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateBookDto {
@@ -15,6 +15,13 @@ export class CreateBookDto {
   @IsBoolean()
   @IsOptional()
   isDefault?: boolean;
+
+  @ApiProperty({ description: '账户图标背景色' })
+  @IsString()
+  @IsOptional()
+  color?: string;
 }
 
-export class UpdateBookDto extends CreateBookDto {}
+export class UpdateBookDto extends CreateBookDto {
+
+}

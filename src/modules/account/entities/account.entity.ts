@@ -6,38 +6,38 @@ import { Record } from 'src/modules/record/entities/record.entity';
 import { AccountTemplate } from '../../account-template/entities/account-template.entity';
 import { AccountType } from '../enums/account-type.enum';
 
-
 @Entity('accounts')
 export class Account extends BaseEntity {
-  @Column({ 
-      unique: false, 
-      nullable: false,
-      length: 50,
-      comment: '账户名称'
-    })
-    name: string;
+  @Column({
+    unique: false,
+    nullable: false,
+    length: 50,
+    comment: '账户名称',
+  })
+  name: string;
 
   @Column({
     type: 'enum',
     enum: AccountType,
-    default: AccountType.CASH
+    default: AccountType.CASH,
   })
   type: AccountType;
 
-  @Column('decimal', { 
-      precision: 10, 
-      scale: 2, 
-      default: 0,
-      comment: '账户余额'
-    })
-    balance: number;
+  @Column('decimal', {
+    precision: 10,
+    scale: 2,
+    default: 0,
+    comment: '账户余额',
+  })
+  balance: number;
 
-    @Column({ 
-      nullable: true,
-      length: 100,
-      comment: '图标'
-    })
-    icon: string;
+  @Column({
+    nullable: true,
+    length: 100,
+    comment: '图标',
+  })
+  icon: string;
+  
 
   @Column({ type: 'text', nullable: true })
   description: string;
@@ -45,15 +45,17 @@ export class Account extends BaseEntity {
   @Column({ default: false })
   isDefault: boolean;
 
-  @ManyToOne(() => User, user => user.accounts)
+  @ManyToOne(() => User, (user) => user.accounts)
   user: User;
 
-  @ManyToOne(() => Book, book => book.accounts)
+  @ManyToOne(() => Book, (book) => book.accounts)
   book: Book;
 
-  @OneToMany(() => Record, record => record.account)
+  @OneToMany(() => Record, (record) => record.account)
   records: Record[];
 
-  @ManyToOne(() => AccountTemplate, template => template.accounts)
+  @ManyToOne(() => AccountTemplate, (template) => template.accounts)
   template: AccountTemplate;
+
+
 }

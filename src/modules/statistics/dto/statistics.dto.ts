@@ -7,7 +7,13 @@ export enum StatisticsType {
   YEAR = 'year'
 }
 
+// 在 StatisticsQueryDto 和 StatisticsDetailQueryDto 中添加 bookId 字段
 export class StatisticsQueryDto {
+  @ApiProperty({ description: '账本ID', required: false })
+  @IsNumber()
+  @IsOptional()
+  bookId?: number;
+  
   @ApiProperty({ description: '统计类型', enum: StatisticsType })
   @IsEnum(StatisticsType)
   type: StatisticsType;

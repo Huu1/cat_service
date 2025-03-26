@@ -1,4 +1,10 @@
-import { IsString, IsEnum, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsEnum,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { AccountType } from '../enums/account-type.enum';
 
@@ -37,6 +43,10 @@ export class CreateAccountDto {
 }
 
 export class UpdateAccountDto {
+  @ApiProperty({ required: false })
+  @IsNumber()
+  id?: number;
+
   @ApiProperty({ description: '账户名称', required: false })
   @IsString()
   @IsOptional()
