@@ -28,10 +28,19 @@ export class RecordController {
   })
   @ApiResponse({ status: 400, description: '参数错误' })
   @ApiResponse({ status: 404, description: '记录不存在（更新时）' })
-  createOrUpdate(
+  async createOrUpdate(
     @CurrentUser() user: JwtPayload,
     @Body() recordDto: CreateRecordDto & { id?: number }
   ) {
+    // 获取账户信息
+    const account = await this.recordService.getAccount(user.userId, recordDto.accountId);
+    
+    // 如果是信用账户，调整金额计算方式
+    if (['CREDIT', 'PAYABLE'].includes(account.type)) {
+      // 对于信用账户，收入（还款）和支出（消费）的金额需要反转
+      recordDto.amount = Math.abs(recordDto.amount); // 确保金额为正数
+    }
+
     if (recordDto.id) {
       // 有ID，执行更新操作
       return this.recordService.update(user.userId, recordDto.id, recordDto);

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export enum StatisticsType {
   MONTH = 'month',
@@ -50,4 +50,39 @@ export class StatisticsDetailQueryDto extends StatisticsQueryDto {
   @Max(100)
   @Type(() => Number)
   pageSize?: number = 10;
+}
+
+// 在现有的 DTO 文件中添加新的 DTO
+export class RangeStatisticsQueryDto {
+  @ApiProperty({ description: '开始日期 YYYY-MM-DD', example: '2023-01-01' })
+  @IsString()
+  @IsNotEmpty()
+  startDate: string;
+
+  @ApiProperty({ description: '结束日期 YYYY-MM-DD', example: '2023-12-31' })
+  @IsString()
+  @IsNotEmpty()
+  endDate: string;
+
+  @ApiProperty({ 
+    description: '统计类型：按天/周/月/年', 
+    enum: ['day', 'week', 'month', 'year'],
+    default: 'day',
+    required: false
+  })
+  @IsEnum(['day', 'week', 'month', 'year'])
+  @IsOptional()
+  type?: 'day' | 'week' | 'month' | 'year' = 'day';
+
+  @ApiProperty({ description: '账本ID数组', type: [Number], required: false })
+  @IsArray()
+  @IsNumber({}, { each: true })
+  @IsOptional()
+  bookIds?: number[];
+
+  @ApiProperty({ description: '账户ID数组', type: [Number], required: false })
+  @IsArray()
+  @IsNumber({}, { each: true })
+  @IsOptional()
+  accountIds?: number[];
 }
