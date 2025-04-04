@@ -5,34 +5,30 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import * as express from 'express'; // Add this import
+import { ConfigService } from '@nestjs/config'; // 添加这个导入
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-
-  
-  // 添加信任代理设置，解决 X-Forwarded-For 问题
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   const expressApp = app.getHttpAdapter().getInstance();
-  expressApp.set('trust proxy', true);
   
   const configService = app.get(ConfigService);
-  // 👇 输出验证 (部署后查看)
-  console.log('当前配置：', {
-    env: configService.get('NODE_ENV'),
-    host: configService.get('DB_HOST'),
-    port: configService.get('DB_PORT'),
-  });
+  // 根据环境设置 trust proxy
+  const isProduction = configService.get('NODE_ENV') === 'production';
+  expressApp.set('trust proxy', isProduction ? 1 : false);
 
   // 限制请求速率
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000, // 15分钟
-      max: 1000, // 限制每个IP 15分钟内最多100个请求
+      max: 1000, // 限制每个IP 15分钟内最多1000个请求
+      // 修改这里，使用正确的属性名
+      skipSuccessfulRequests: false,
+      standardHeaders: true,
+      legacyHeaders: false,
     }),
   );
 
