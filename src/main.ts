@@ -23,12 +23,14 @@ async function bootstrap() {
   // 限制请求速率
   app.use(
     rateLimit({
-      windowMs: 15 * 60 * 1000, // 15分钟
-      max: 1000, // 限制每个IP 15分钟内最多1000个请求
-      // 修改这里，使用正确的属性名
-      skipSuccessfulRequests: false,
+      windowMs: 15 * 60 * 1000,
+      max: 100,
       standardHeaders: true,
       legacyHeaders: false,
+      keyGenerator: (req) => {
+        // 自定义 IP 提取逻辑
+        return req.ip; // 使用 Express 提供的 IP
+      },
     }),
   );
 
