@@ -16,6 +16,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { PermissionGuard } from './modules/auth/guards/permission.guard';
 import { DatabaseModule } from './modules/database/database.module';
 import { OnlineStatusGuard } from './modules/user/online-status.guard';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
@@ -39,6 +40,10 @@ import { OnlineStatusGuard } from './modules/user/online-status.guard';
     BookModule,
     RecordModule,
     StatisticsModule,
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 时间窗口，单位毫秒
+      limit: 20,  // 在时间窗口内允许的最大请求数
+    }]),
   ],
   providers: [
     {

@@ -4,8 +4,8 @@ import { AppModule } from './app.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { ConfigService } from '@nestjs/config'; // 添加这个导入
+// 移除 express-rate-limit
+import { ConfigService } from '@nestjs/config';
 import * as express from 'express';
 
 async function bootstrap() {
@@ -13,27 +13,6 @@ async function bootstrap() {
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-  const expressApp = app.getHttpAdapter().getInstance();
-  
-  const configService = app.get(ConfigService);
-  
-  // 完全禁用 trust proxy
-  expressApp.set('trust proxy', false);
-  
-  // 限制请求速率
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 1000,
-      // 使用自定义的 IP 提取方法
-      keyGenerator: (req) => {
-        // 直接使用 socket 的远程地址作为 IP
-        return req.socket.remoteAddress || '127.0.0.1';
-      },
-      standardHeaders: true,
-      legacyHeaders: false,
-    }),
-  );
 
   // 使用 helmet 中间件
   app.use(helmet());
