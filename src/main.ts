@@ -16,17 +16,17 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   
   const configService = app.get(ConfigService);
-  // 根据环境设置 trust proxy
-  const isProduction = configService.get('NODE_ENV') === 'production';
-  expressApp.set('trust proxy', isProduction ? 1 : false);
-
+  
+  // 修改 trust proxy 设置为更安全的配置
+  // 使用数字 1 而不是 true，表示只信任第一个代理
+  expressApp.set('trust proxy', 1);
+  
   // 限制请求速率
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000, // 15分钟
       max: 1000, // 限制每个IP 15分钟内最多1000个请求
-      // 修改这里，使用正确的属性名
-      skipSuccessfulRequests: false,
+      // 移除 trustProxy 选项，使用更安全的配置
       standardHeaders: true,
       legacyHeaders: false,
     }),
