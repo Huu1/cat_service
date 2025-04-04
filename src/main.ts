@@ -17,16 +17,19 @@ async function bootstrap() {
   
   const configService = app.get(ConfigService);
   
-  // 修改 trust proxy 设置为更安全的配置
-  // 使用数字 1 而不是 true，表示只信任第一个代理
-  expressApp.set('trust proxy', 1);
+  // 完全禁用 trust proxy
+  expressApp.set('trust proxy', false);
   
   // 限制请求速率
   app.use(
     rateLimit({
-      windowMs: 15 * 60 * 1000, // 15分钟
-      max: 1000, // 限制每个IP 15分钟内最多1000个请求
-      // 移除 trustProxy 选项，使用更安全的配置
+      windowMs: 15 * 60 * 1000,
+      max: 1000,
+      // 使用自定义的 IP 提取方法
+      keyGenerator: (req) => {
+        // 直接使用 socket 的远程地址作为 IP
+        return req.socket.remoteAddress || '127.0.0.1';
+      },
       standardHeaders: true,
       legacyHeaders: false,
     }),
