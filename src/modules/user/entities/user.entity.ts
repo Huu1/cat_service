@@ -24,6 +24,28 @@ export class User extends BaseEntity {
   })
   username: string;
 
+  @Column({
+    unique: false,
+    nullable: true,
+    length: 50,
+    comment: '用户昵称',
+  })
+  nickname: string;
+
+  @Column({
+    nullable: true,
+    length: 200,
+    comment: '用户头像',
+  })
+  avatar: string;
+
+  @Column({
+    nullable: true,
+    length: 100,
+    comment: '用户邮箱',
+  })
+  email: string;
+
   @Column({ 
     unique: false, 
     nullable: false,

@@ -8,6 +8,7 @@ import { BusinessException } from '../../common/exceptions/business.exception';
 import { BusinessError } from '../../common/enums/business-error.enum';
 import { BookService } from '../book/book.service';
 import { User } from './entities/user.entity';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -103,5 +104,18 @@ export class UserService {
     }
 
     return queryBuilder.getMany();
+  }
+
+  async updateUserInfo(userId: number, updateUserDto: UpdateUserDto) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    // 只更新提供的字段
+    Object.assign(user, updateUserDto);
+    
+    await this.userRepository.save(user);
+    return user;
   }
 }
