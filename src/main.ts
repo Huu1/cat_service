@@ -18,19 +18,29 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   // 根据环境设置 trust proxy
   const isProduction = configService.get('NODE_ENV') === 'production';
-  expressApp.set('trust proxy', isProduction ? 1 : false);
+  
+  // 修改为更安全的设置
+  if (isProduction) {
+    // 在生产环境中，只信任第一个代理
+    expressApp.set('trust proxy', 1);
+  } else {
+    // 在开发环境中，不信任任何代理
+    expressApp.set('trust proxy', false);
+  }
 
   // 限制请求速率
   app.use(
     rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 100,
+      windowMs: 15 * 60 * 1000, // 15分钟
+      max: 1000, // 限制每个IP 15分钟内最多1000个请求
+      skipSuccessfulRequests: false,
       standardHeaders: true,
       legacyHeaders: false,
-      keyGenerator: (req) => {
-        // 自定义 IP 提取逻辑
-        return req.ip; // 使用 Express 提供的 IP
-      },
+      // 添加自定义 IP 提取逻辑
+      keyGenerator: (request, response) => {
+        // 使用 Express 提供的 IP 解析
+        return request.ip;
+      }
     }),
   );
 
