@@ -28,7 +28,7 @@ module.exports = {
         USER_USERNAME: "user",
         USER_PASSWORD: "user"
       },
-      cwd: "/www/wwwroot/services/",
+      cwd: "/www/wwwroot/services/cat_service",
       watch: false,
       instances: 1,
       exec_mode: "fork"
