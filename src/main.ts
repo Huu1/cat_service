@@ -5,50 +5,15 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { ConfigService } from '@nestjs/config'; // 添加这个导入
-import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  const expressApp = app.getHttpAdapter().getInstance();
-  
-  const configService = app.get(ConfigService);
-  // 根据环境设置 trust proxy
-  const isProduction = configService.get('NODE_ENV') === 'production';
-  
-  // 修改为更安全的设置
-  if (isProduction) {
-    // 在生产环境中，只信任第一个代理
-    expressApp.set('trust proxy', 1);
-  } else {
-    // 在开发环境中，不信任任何代理
-    expressApp.set('trust proxy', false);
-  }
 
   // 限制请求速率
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000, // 15分钟
-      max: 1000, // 限制每个IP 15分钟内最多1000个请求
-      skipSuccessfulRequests: false,
-      standardHeaders: true,
-      legacyHeaders: false,
-      // 添加自定义 IP 提取逻辑
-      keyGenerator: (request, response) => {
-        // 使用客户端真实IP
-        const realIp = request.headers['x-real-ip'] || 
-                       request.headers['x-forwarded-for'] || 
-                       request.socket.remoteAddress;
-        return Array.isArray(realIp) ? realIp[0] : realIp;
-      },
-      // 添加验证函数，明确告诉 express-rate-limit 我们已经处理了 trust proxy 问题
-      validate: {
-        trustProxy: false, // 禁用内置的 trustProxy 检查，因为我们自己处理
-        xForwardedForHeader: false // 禁用对 x-forwarded-for 头的自动处理
-      }
+      max: 1000, // 限制每个IP 15分钟内最多100个请求
     }),
   );
 
