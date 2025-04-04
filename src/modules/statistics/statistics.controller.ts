@@ -6,6 +6,9 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { RangeStatisticsQueryDto, StatisticsDetailQueryDto, StatisticsQueryDto } from './dto/statistics.dto';
 
+// 导入新的DTO
+import { UserStatisticsQueryDto } from './dto/user-statistics.dto';
+
 @ApiTags('统计当月/当年 收入-支出-结余')
 @Controller('statistics')
 @ApiBearerAuth()
@@ -69,5 +72,20 @@ export class StatisticsController {
     @Body() query: RangeStatisticsQueryDto
   ) {
     return this.statisticsService.getAssetsTrend(user.userId, query);
+  }
+
+
+  @Get('user/habits')
+  @ApiOperation({ summary: '获取用户记账习惯统计' })
+  async getUserHabitsStatistics(
+    @Query() query: UserStatisticsQueryDto
+  ) {
+    return this.statisticsService.getUserHabitsStatistics( query);
+  }
+
+  @Get('online')
+  @ApiOperation({ summary: '获取在线用户统计' })
+  async getOnlineUsersStatistics() {
+    return this.statisticsService.getOnlineUsersStatistics();
   }
 }

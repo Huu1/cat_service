@@ -8,6 +8,7 @@ import { BusinessException } from '../../common/exceptions/business.exception';
 import { BusinessError } from '../../common/enums/business-error.enum';
 import Decimal from 'decimal.js';
 import { Category } from '../category/entities/category.entity';
+import { RedisService } from '../redis/redis.service'; // 添加这一行
 
 @Injectable()
 export class RecordService {
@@ -17,6 +18,7 @@ export class RecordService {
     @InjectRepository(Account)
     private accountRepository: Repository<Account>,
     private dataSource: DataSource,
+    private redisService: RedisService, // 添加 RedisService
   ) {}
 
   async create(userId: number, createRecordDto: CreateRecordDto) {
@@ -76,7 +78,12 @@ export class RecordService {
         category: { id: categoryId },
       });
 
-      return manager.save(record);
+      const savedRecord = await manager.save(record);
+      
+      // 记录用户记账行为到 Redis
+      await this.redisService.recordUserBookkeeping(userId.toString());
+      
+      return savedRecord;
     });
   }
 

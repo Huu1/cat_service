@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MysqlModule } from './modules/mysql/mysql.module';
 import { RedisModule } from './modules/redis/redis.module';
@@ -15,6 +15,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { PermissionGuard } from './modules/auth/guards/permission.guard';
 import { DatabaseModule } from './modules/database/database.module';
+import { OnlineStatusGuard } from './modules/user/online-status.guard';
 
 @Module({
   imports: [
@@ -48,6 +49,11 @@ import { DatabaseModule } from './modules/database/database.module';
       provide: APP_GUARD,
       useClass: PermissionGuard,
     },
+    {
+      provide: APP_GUARD,
+      useClass: OnlineStatusGuard,
+    },
   ],
 })
-export class AppModule {}
+export class AppModule {
+}

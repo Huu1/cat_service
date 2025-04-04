@@ -10,15 +10,35 @@ import {
 } from './dto/statistics.dto';
 import { RecordType } from '../record/entities/record.entity';
 import { Account } from '../account/entities/account.entity';
+import { UserStatisticsQueryDto, UserStatisticsTimeRange } from './dto/user-statistics.dto';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class StatisticsService {
+  // 在 StatisticsService 类的构造函数中注入 RedisService
   constructor(
     @InjectRepository(Record)
     private recordRepository: Repository<Record>,
     @InjectRepository(Account)
     private accountRepository: Repository<Account>,
+    private redisService: RedisService, // 添加这一行
   ) {}
+
+  // 更新 getOnlineUsersStatistics 方法
+  async getOnlineUsersStatistics() {
+    const [onlineUsers, todayActiveUsers, todayRecordsCount] =
+      await Promise.all([
+        this.redisService.getOnlineUsersCount(),
+        this.redisService.getTodayActiveUsersCount(),
+        this.redisService.getTodayRecordsCount(),
+      ]);
+
+    return {
+      currentOnlineUsers: onlineUsers,
+      todayActiveUsers: todayActiveUsers,
+      todayRecordsCount: todayRecordsCount
+    };
+  }
 
   async getStatistics(userId: number, query: StatisticsQueryDto) {
     const queryBuilder = this.recordRepository
@@ -495,22 +515,20 @@ export class StatisticsService {
     return result;
   }
 
- 
-  
   // 生成日期范围的辅助方法
   private generateDateRange(startDate: string, endDate: string, type: string) {
     const result = [];
-    
+
     if (type === 'day') {
       // 按天生成日期范围
       const start = new Date(startDate);
       const end = new Date(endDate);
-      
+
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
         result.push({
           date: dateStr,
-          name: dateStr
+          name: dateStr,
         });
       }
     } else if (type === 'month') {
@@ -518,112 +536,120 @@ export class StatisticsService {
       const [year, month] = startDate.split('-').slice(0, 2);
       const daysInMonth = new Date(Number(year), Number(month), 0).getDate();
       const datePrefix = `${year}-${month}`;
-      
+
       for (let day = 1; day <= daysInMonth; day++) {
         const dayStr = day.toString().padStart(2, '0');
         result.push({
           date: `${datePrefix}-${dayStr}`,
-          name: dayStr
+          name: dayStr,
         });
       }
     } else if (type === 'year') {
       // 按年内月份生成范围
       const year = startDate.split('-')[0];
-      
+
       for (let month = 1; month <= 12; month++) {
         const monthStr = month.toString().padStart(2, '0');
         const lastDay = new Date(Number(year), month, 0).getDate();
         result.push({
           date: `${year}-${monthStr}-${lastDay}`, // 使用每月最后一天
-          name: `${month}月`
+          name: `${month}月`,
         });
       }
     } else if (type === 'week') {
       // 按周内天生成范围
       const weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
       const start = new Date(startDate);
-      
+
       // 调整到本周一
       const day = start.getDay();
       const diff = start.getDate() - day + (day === 0 ? -6 : 1);
       start.setDate(diff);
-      
+
       for (let i = 0; i < 7; i++) {
         const d = new Date(start);
         d.setDate(d.getDate() + i);
         const dateStr = d.toISOString().split('T')[0];
         result.push({
           date: dateStr,
-          name: weekDays[i]
+          name: weekDays[i],
         });
       }
     }
-    
+
     return result;
   }
 
-
   async getAssetsTrend(userId: number, query: RangeStatisticsQueryDto) {
     const { startDate, endDate, bookIds, accountIds, type = 'day' } = query;
-    
+
     // 生成日期范围
     const dateRange = this.generateDateRange(startDate, endDate, type);
-    
+
     // 查询所有账户信息
-    const accountQueryBuilder = this.accountRepository.createQueryBuilder('account')
+    const accountQueryBuilder = this.accountRepository
+      .createQueryBuilder('account')
       .leftJoinAndSelect('account.book', 'book')
       .where('account.user.id = :userId', { userId });
-    
+
     // 添加账本筛选
     if (bookIds && bookIds.length > 0) {
       accountQueryBuilder.andWhere('book.id IN (:...bookIds)', { bookIds });
     }
-    
+
     // 添加账户筛选
     if (accountIds && accountIds.length > 0) {
-      accountQueryBuilder.andWhere('account.id IN (:...accountIds)', { accountIds });
+      accountQueryBuilder.andWhere('account.id IN (:...accountIds)', {
+        accountIds,
+      });
     }
-    
+
     const accounts = await accountQueryBuilder.getMany();
-    
+
     // 查询所有记录
-    const recordQueryBuilder = this.recordRepository.createQueryBuilder('record')
+    const recordQueryBuilder = this.recordRepository
+      .createQueryBuilder('record')
       .leftJoinAndSelect('record.account', 'account')
       .where('record.user.id = :userId', { userId })
       .andWhere('record.recordDate <= :endDate', { endDate });
-    
+
     // 添加账本筛选
     if (bookIds && bookIds.length > 0) {
-      recordQueryBuilder.andWhere('record.book.id IN (:...bookIds)', { bookIds });
+      recordQueryBuilder.andWhere('record.book.id IN (:...bookIds)', {
+        bookIds,
+      });
     }
-    
+
     // 添加账户筛选
     if (accountIds && accountIds.length > 0) {
-      recordQueryBuilder.andWhere('record.account.id IN (:...accountIds)', { accountIds });
+      recordQueryBuilder.andWhere('record.account.id IN (:...accountIds)', {
+        accountIds,
+      });
     }
-    
+
     const allRecords = await recordQueryBuilder.getMany();
-    
+
     // 按日期计算资产负债
     const result = [];
-    
+
     for (const dateItem of dateRange) {
       const currentDate = dateItem.date;
       let totalAssets = 0;
       let totalLiabilities = 0;
-      
+
       // 计算每个账户在当前日期的余额
       for (const account of accounts) {
         // 获取账户当前余额
         const currentBalance = Number(account.balance) || 0;
-        
+
         // 筛选出该账户在当前日期之后的所有交易记录
         // 注意：这里假设account.balance是最新余额，需要反向计算历史余额
-        const futureRecords = allRecords.filter(record => 
-          record.account.id === account.id && 
-          new Date(record.recordDate) > new Date(currentDate)
+        const futureRecords = allRecords.filter(
+          (record) =>
+            record.account.id === account.id &&
+            new Date(record.recordDate) > new Date(currentDate),
         );
-        
+
         // 反向计算历史余额
         let historicalBalance = currentBalance;
         for (const record of futureRecords) {
@@ -633,32 +659,198 @@ export class StatisticsService {
             historicalBalance += Number(record.amount); // 反向计算，支出需要加上
           }
         }
-        
+
         // 根据账户类型判断是资产还是负债
         const accountType = (account.type || '').toUpperCase();
-        if (['CASH', 'INVESTMENT', 'RECEIVABLE', 'CHECKING', 'SAVINGS'].includes(accountType)) {
+        if (
+          ['CASH', 'INVESTMENT', 'RECEIVABLE', 'CHECKING', 'SAVINGS'].includes(
+            accountType,
+          )
+        ) {
           totalAssets += historicalBalance;
-        } else if (['CREDIT', 'PAYABLE', 'LOAN', 'DEBT'].includes(accountType)) {
+        } else if (
+          ['CREDIT', 'PAYABLE', 'LOAN', 'DEBT'].includes(accountType)
+        ) {
           totalLiabilities += Math.abs(historicalBalance);
         }
       }
-      
+
       // 计算净资产
       const netAssets = totalAssets - totalLiabilities;
-      
+
       // 添加到结果数组
       result.push({
         date: dateItem.date,
         name: dateItem.name,
         totalAssets: Number(totalAssets.toFixed(2)),
         totalLiabilities: Number(totalLiabilities.toFixed(2)),
-        netAssets: Number(netAssets.toFixed(2))
+        netAssets: Number(netAssets.toFixed(2)),
       });
     }
-    
+
     return result;
   }
+
+  // 在 StatisticsService 类中添加以下方法
+
+
+  /**
+   * 获取用户记账习惯统计
+   */
+  async getUserHabitsStatistics(query: UserStatisticsQueryDto) {
+    // 构建日期范围条件
+    const { startDate, endDate } = this.getDateRangeFromQuery(query);
+
+    // 修改查询以使用 DATE() 函数正确比较日期
+    const recordsQuery = this.recordRepository
+      .createQueryBuilder('record')
+      .andWhere('DATE(record.recordDate) >= :startDate', { startDate })
+      .andWhere('DATE(record.recordDate) <= :endDate', { endDate });
+
+    // 按小时统计记账频率
+    const hourlyStats = await recordsQuery
+      .clone()
+      .select('HOUR(record.createdAt)', 'hour')
+      .addSelect('COUNT(record.id)', 'count')
+      .groupBy('hour')
+      .orderBy('hour', 'ASC')
+      .getRawMany();
+
+    // 按星期几统计记账频率
+    const weekdayStats = await recordsQuery
+      .clone()
+      .select('WEEKDAY(record.recordDate)', 'weekday')
+      .addSelect('COUNT(record.id)', 'count')
+      .groupBy('weekday')
+      .orderBy('weekday', 'ASC')
+      .getRawMany();
+
+    // 按月份统计记账频率
+    const monthlyStats = await recordsQuery
+      .clone()
+      .select('MONTH(record.recordDate)', 'month')
+      .addSelect('COUNT(record.id)', 'count')
+      .groupBy('month')
+      .orderBy('month', 'ASC')
+      .getRawMany();
+
+    // 格式化结果
+    const hourlyData = Array(24).fill(0);
+    hourlyStats.forEach((item) => {
+      hourlyData[Number(item.hour)] = Number(item.count);
+    });
+
+    const weekdayNames = [
+      '周一',
+      '周二',
+      '周三',
+      '周四',
+      '周五',
+      '周六',
+      '周日',
+    ];
+    const weekdayData = Array(7).fill(0);
+    weekdayStats.forEach((item) => {
+      weekdayData[Number(item.weekday)] = Number(item.count);
+    });
+
+    const monthNames = [
+      '1月',
+      '2月',
+      '3月',
+      '4月',
+      '5月',
+      '6月',
+      '7月',
+      '8月',
+      '9月',
+      '10月',
+      '11月',
+      '12月',
+    ];
+    const monthlyData = Array(12).fill(0);
+    monthlyStats.forEach((item) => {
+      monthlyData[Number(item.month) - 1] = Number(item.count);
+    });
+
+    return {
+      timeRange: {
+        startDate,
+        endDate,
+      },
+      hourly: {
+        labels: Array.from({ length: 24 }, (_, i) => `${i}时`),
+        data: hourlyData,
+      },
+      weekday: {
+        labels: weekdayNames,
+        data: weekdayData,
+      },
+      monthly: {
+        labels: monthNames,
+        data: monthlyData,
+      },
+    };
+  }
+
+  /**
+   * 从查询参数获取日期范围
+   */
+  private getDateRangeFromQuery(query: UserStatisticsQueryDto): {
+    startDate: string;
+    endDate: string;
+  } {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let startDate: Date;
+    let endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
+
+    // 如果提供了自定义日期范围，优先使用
+    if (query.startDate && query.endDate) {
+      return {
+        startDate: query.startDate,
+        endDate: query.endDate,
+      };
+    }
+
+    // 根据时间范围设置起止日期
+    switch (query.timeRange) {
+      case UserStatisticsTimeRange.TODAY:
+        startDate = today;
+        break;
+      case UserStatisticsTimeRange.WEEK:
+        startDate = new Date(today);
+        startDate.setDate(
+          today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1),
+        ); // 设置为本周一
+        break;
+      case UserStatisticsTimeRange.MONTH:
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        break;
+      case UserStatisticsTimeRange.YEAR:
+        startDate = new Date(today.getFullYear(), 0, 1);
+        break;
+      case UserStatisticsTimeRange.ALL:
+      default:
+        startDate = new Date(2000, 0, 1); // 设置一个足够早的日期
+        break;
+    }
+
+    return {
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+    };
+  }
+
+  /**
+   * 计算两个日期之间的天数
+   */
+  private getDaysInRange(startDate: string, endDate: string): number {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 包含起始日期
+  }
 }
-
-
-
