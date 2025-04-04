@@ -7,8 +7,8 @@ import {
 } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../user/entities/user.entity';
-import { Account } from 'src/modules/account/entities/account.entity';
-import { Record } from 'src/modules/record/entities/record.entity';
+import { Record } from '../../record/entities/record.entity';
+import { Account } from '../../account/entities/account.entity';
 
 @Entity('books')
 export class Book extends BaseEntity {

@@ -6,13 +6,13 @@ import {
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
+  OneToMany
 } from 'typeorm';
 import { Role } from './role.entity';
-import { BaseEntity } from 'src/common/entities/base.entity';
-import { OneToMany } from 'typeorm';
+import { BaseEntity } from '../../../common/entities/base.entity';
 import { Book } from '../../book/entities/book.entity';
-import { Account } from 'src/modules/account/entities/account.entity';
-import { Record } from 'src/modules/record/entities/record.entity';
+import { Account } from '../../account/entities/account.entity';
+import { Record } from '../../record/entities/record.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
@@ -31,7 +31,12 @@ export class User extends BaseEntity {
   })
   password: string;
 
-  @Column({ nullable: true })
+  @Column({ 
+    nullable: true,
+    comment: '微信小程序用户openid',
+    length: 100,
+    unique: false,
+  })
   openid: string;
 
   @Column({ default: true })

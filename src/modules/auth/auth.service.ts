@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+// 将 bcrypt 替换为 bcryptjs
+import * as bcrypt from 'bcryptjs';
 import axios from 'axios';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';

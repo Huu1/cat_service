@@ -5,9 +5,26 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import * as express from 'express'; // Add this import
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  
+  // 添加信任代理设置，解决 X-Forwarded-For 问题
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', true);
+  
+  const configService = app.get(ConfigService);
+  // 👇 输出验证 (部署后查看)
+  console.log('当前配置：', {
+    env: configService.get('NODE_ENV'),
+    host: configService.get('DB_HOST'),
+    port: configService.get('DB_PORT'),
+  });
 
   // 限制请求速率
   app.use(
@@ -38,7 +55,8 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   const port = process.env.PORT || 3000;
-  await app.listen(port,'0.0.0.0');
+  await app.listen(port, '0.0.0.0');
   // console.log(`应用已启动，监听地址: 0.0.0.0:${port}`);
 }
+
 bootstrap();

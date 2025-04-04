@@ -2,7 +2,7 @@ import { Entity, Column, ManyToOne, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../user/entities/user.entity';
 import { Book } from '../../book/entities/book.entity';
-import { Record } from 'src/modules/record/entities/record.entity';
+import { Record } from '../../record/entities/record.entity';
 import { AccountTemplate } from '../../account-template/entities/account-template.entity';
 import { AccountType } from '../enums/account-type.enum';
 

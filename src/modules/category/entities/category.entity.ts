@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
-import { Record } from 'src/modules/record/entities/record.entity';
+import { Record } from '../../record/entities/record.entity';
 
 export enum CategoryType {
   INCOME = 'income',

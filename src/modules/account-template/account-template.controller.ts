@@ -20,8 +20,6 @@ import {
   UpdateAccountTemplateDto,
 } from './dto/account-template.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import {
   AccountType,
   AccountTypesMap,
@@ -37,8 +35,7 @@ export class AccountTemplateController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '创建账户模板' })
   create(@Body() createDto: CreateAccountTemplateDto) {
     return this.accountTemplateService.create(createDto);
@@ -103,16 +100,14 @@ export class AccountTemplateController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles('admin')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '更新账户模板' })
   update(@Param('id') id: string, @Body() updateDto: UpdateAccountTemplateDto) {
     return this.accountTemplateService.update(+id, updateDto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '删除账户模板' })
   remove(@Param('id') id: string) {
     return this.accountTemplateService.remove(+id);
