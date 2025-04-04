@@ -38,8 +38,16 @@ async function bootstrap() {
       legacyHeaders: false,
       // 添加自定义 IP 提取逻辑
       keyGenerator: (request, response) => {
-        // 使用 Express 提供的 IP 解析
-        return request.ip;
+        // 使用客户端真实IP
+        const realIp = request.headers['x-real-ip'] || 
+                       request.headers['x-forwarded-for'] || 
+                       request.socket.remoteAddress;
+        return Array.isArray(realIp) ? realIp[0] : realIp;
+      },
+      // 添加验证函数，明确告诉 express-rate-limit 我们已经处理了 trust proxy 问题
+      validate: {
+        trustProxy: false, // 禁用内置的 trustProxy 检查，因为我们自己处理
+        xForwardedForHeader: false // 禁用对 x-forwarded-for 头的自动处理
       }
     }),
   );
