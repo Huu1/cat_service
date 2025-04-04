@@ -4,8 +4,6 @@ import { AppModule } from './app.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import helmet from 'helmet';
-// 移除 express-rate-limit
-import { ConfigService } from '@nestjs/config';
 import * as express from 'express';
 
 async function bootstrap() {
@@ -13,6 +11,10 @@ async function bootstrap() {
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // 确保 Express 的 trust proxy 设置为 false
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', false);
 
   // 使用 helmet 中间件
   app.use(helmet());
