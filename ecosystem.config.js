@@ -1,4 +1,4 @@
-module.exports = {
+module.exports = { 
     apps: [{
       name: "book-service",
       script: "./dist/main.js",
