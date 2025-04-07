@@ -17,6 +17,8 @@ import { PermissionGuard } from './modules/auth/guards/permission.guard';
 import { DatabaseModule } from './modules/database/database.module';
 import { OnlineStatusGuard } from './modules/user/online-status.guard';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { DictionaryModule } from './modules/dictionary/dictionary.module';
+import { FileModule } from './modules/file/file.module';
 
 @Module({
   imports: [
@@ -44,6 +46,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
       ttl: 60000, // 时间窗口，单位毫秒
       limit: 20,  // 在时间窗口内允许的最大请求数
     }]),
+    DictionaryModule,
+    FileModule,
   ],
   providers: [
     {
@@ -60,5 +64,4 @@ import { ThrottlerModule } from '@nestjs/throttler';
     },
   ],
 })
-export class AppModule {
-}
+export class AppModule {}

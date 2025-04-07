@@ -16,6 +16,27 @@ export const permissionsData = [
   { code: 'user:read', name: '查看用户', description: '允许查看用户列表和详情' },
   { code: 'user:update', name: '更新用户', description: '允许修改用户信息' },
   { code: 'user:delete', name: '删除用户', description: '允许删除用户' },
+  // 添加字典管理权限
+  {
+    code: 'system:dict:create',
+    name: '创建字典',
+    description: '创建系统字典类型和字典项',
+  },
+  {
+    code: 'system:dict:read',
+    name: '查询字典',
+    description: '查询系统字典类型和字典项',
+  },
+  {
+    code: 'system:dict:update',
+    name: '更新字典',
+    description: '更新系统字典类型和字典项',
+  },
+  {
+    code: 'system:dict:delete',
+    name: '删除字典',
+    description: '删除系统字典类型和字典项',
+  },
 ];
 
 export const rolesData = [

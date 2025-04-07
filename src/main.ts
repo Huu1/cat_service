@@ -5,12 +5,31 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import helmet from 'helmet';
 import * as express from 'express';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // 添加一个中间件来处理静态文件请求，跳过认证
+  app.use('/api/uploads', (req, res, next) => {
+    if (req.path.startsWith('/uploads/')) {
+      next();
+    } else {
+      next();
+    }
+  });
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // global prefix 全局注册路径前缀
+  app.setGlobalPrefix('api');
+
+  // 配置静态文件服务，将路径前缀改为 /api/uploads/
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/api/uploads/',
+  });
 
   // 确保 Express 的 trust proxy 设置为 false
   const expressApp = app.getHttpAdapter().getInstance();
@@ -37,6 +56,7 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   const port = process.env.PORT || 3000;
+
   await app.listen(port, '0.0.0.0');
   // console.log(`应用已启动，监听地址: 0.0.0.0:${port}`);
 }

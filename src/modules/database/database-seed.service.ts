@@ -98,35 +98,40 @@ export class DatabaseSeedService implements OnApplicationBootstrap {
 
         // 初始化分类
         for (const categoryData of allCategories) {
-          const existingCategory = await manager.findOne(Category, {
-            where: { name: categoryData.name, type: categoryData.type },
-          });
+          try {
+            const existingCategory = await manager.findOne(Category, {
+              where: { name: categoryData.name, type: categoryData.type },
+            });
 
-          if (existingCategory) {
-            await manager.update(
-              Category,
-              { id: existingCategory.id },
-              categoryData,
-            );
-          } else {
-            await manager.save(Category, categoryData);
+            if (existingCategory) {
+              this.logger.log(`分类 ${categoryData.name} (${categoryData.type}) 已存在，更新信息`);
+          
+            } else {
+              this.logger.log(`创建新分类 ${categoryData.name} (${categoryData.type})`);
+              await manager.save(Category, categoryData);
+            }
+          } catch (error) {
+            this.logger.warn(`处理分类 ${categoryData.name} 时出错: ${error.message}`);
+            // 继续处理下一个分类，不中断流程
           }
         }
 
         // 初始化账户模板
         for (const templateData of accountTemplates) {
-          const existingTemplate = await manager.findOne(AccountTemplate, {
-            where: { name: templateData.name, type: templateData.type },
-          });
+          try {
+            const existingTemplate = await manager.findOne(AccountTemplate, {
+              where: { name: templateData.name, type: templateData.type },
+            });
 
-          if (existingTemplate) {
-            await manager.update(
-              AccountTemplate,
-              { id: existingTemplate.id },
-              templateData,
-            );
-          } else {
-            await manager.save(AccountTemplate, templateData);
+            if (existingTemplate) {
+              this.logger.log(`账户模板 ${templateData.name} (${templateData.type}) 已存在，更新信息`);
+            } else {
+              this.logger.log(`创建新账户模板 ${templateData.name} (${templateData.type})`);
+              await manager.save(AccountTemplate, templateData);
+            }
+          } catch (error) {
+            this.logger.warn(`处理账户模板 ${templateData.name} 时出错: ${error.message}`);
+            // 继续处理下一个模板，不中断流程
           }
         }
 
