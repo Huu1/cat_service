@@ -22,6 +22,7 @@ import { Response, Request } from 'express';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { FileService } from '../services/file.service';
 import { FileQueryDto } from '../dto/file.dto';
+import { Permissions } from 'src/modules/auth/decorators/permissions.decorator';
 
 @ApiTags('文件管理')
 @Controller('files')
@@ -169,6 +170,7 @@ export class FileController {
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Permissions('file:delete')
   @ApiOperation({ summary: '删除文件' })
   @ApiParam({ name: 'id', description: '文件ID' })
   async remove(@Param('id', ParseIntPipe) id: number) {

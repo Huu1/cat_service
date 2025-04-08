@@ -17,7 +17,7 @@ export class DictItem extends BaseEntity {
   label: string;
 
   @Column({
-    nullable: true,
+    nullable: false,
     length: 255,
     comment: '附加数据',
   })
@@ -52,7 +52,7 @@ export class DictItem extends BaseEntity {
   @ManyToOne(() => DictType, (dictType) => dictType.dictItems, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'dict_type_id' })
+  @JoinColumn()
   dictType: DictType;
 
   @Column()

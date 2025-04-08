@@ -8,6 +8,12 @@
 /node_modules
 /build
 
+/deploy
+/uploads
+/temp
+
+deploy.sh
+
 # Logs
 logs
 *.log

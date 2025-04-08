@@ -1,28 +1,43 @@
 #!/bin/bash
 
-echo "开始部署..."
-
-# 设置环境变量
-export NODE_ENV=production
-
-# 从代码仓库拉取最新代码
-echo "拉取最新代码..."
-git pull origin main  # 根据你的分支名称调整，可能是 master 或其他分支名
-
-# 安装依赖
-echo "安装依赖..."
-pnpm install
-
 # 构建项目
-echo "构建项目..."
-pnpm run build
+npm run build
 
-# 运行数据库迁移
-echo "执行数据库迁移..."
-npx typeorm migration:run -d dist/config/typeorm.config.js
+# 创建部署文件夹
+rm -rf deploy
+mkdir -p deploy
 
-# 使用 PM2 重启服务
-echo "重启服务..."
-pm2 restart ecosystem.config.js
+# 复制必要文件
+cp -r dist package.json ecosystem.config.js src tsconfig.json deploy/
 
-echo "部署完成"
+# 创建一个临时的.env文件，包含生产环境的数据库配置
+cat > deploy/.env << EOL
+# 数据库配置
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USERNAME=hy
+DB_PASSWORD=hy123456
+DB_DATABASE=book
+# Redis配置
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+EOL
+
+# 创建压缩包
+cd deploy
+tar -czf deploy.tar.gz *
+
+# 上传到服务器
+scp deploy.tar.gz root@106.54.210.11:/www/wwwroot/services/cat_service/
+
+# 远程执行部署命令
+ssh root@106.54.210.11 "cd /www/wwwroot/services/cat_service && \
+  tar -xzf deploy.tar.gz && \
+  /www/server/nodejs/v18.16.1/bin/pnpm install && \
+  NODE_ENV=production DB_HOST=127.0.0.1 DB_PORT=3306 DB_USERNAME=hy DB_PASSWORD=hy123456 DB_DATABASE=book \
+  /www/server/nodejs/v18.16.1/bin/pnpm run typeorm:run-migrations && \
+  pm2 reload ecosystem.config.js"
+
+# 清理本地文件
+cd ..
+rm -rf deploy
