@@ -4,7 +4,7 @@ import {
   IsNumber,
   IsDate,
   IsOptional,
-  Length,
+  IsArray,
   Min,
   registerDecorator,
 } from 'class-validator';
@@ -37,9 +37,10 @@ export class CreateRecordDto {
   @IsNumber()
   bookId: number;
 
-  @ApiProperty({ description: '账户ID' })
+  @ApiProperty({ description: '账户ID', required: false })
   @IsNumber()
-  accountId: number;
+  @IsOptional() // 添加可选标记
+  accountId?: number;
 
   @ApiProperty({ description: '分类ID' })
   @IsNumber()
@@ -48,6 +49,12 @@ export class CreateRecordDto {
   @ApiProperty({ description: '记录类型', enum: RecordType })
   @IsEnum(RecordType)
   type: RecordType;
+  
+  @ApiProperty({ description: '图片URL数组', required: false, type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  images?: string[];
 }
 
 export class UpdateRecordDto extends CreateRecordDto {

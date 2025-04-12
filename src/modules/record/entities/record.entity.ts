@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, Index } from 'typeorm';
+import { Entity, Column, ManyToOne, Index, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { User } from '../../user/entities/user.entity';
 import { Book } from '../../book/entities/book.entity';
@@ -28,7 +28,6 @@ export class Record extends BaseEntity {
   })
   amount: number;
 
-
   @Column({ 
     type: 'text', 
     nullable: true,
@@ -49,10 +48,14 @@ export class Record extends BaseEntity {
   book: Book;
 
   @ManyToOne(() => Account, account => account.records, {
-    nullable: false,
-    onDelete: 'CASCADE'
+    nullable: true,
+    onDelete: 'SET NULL'
   })
+  @JoinColumn({ name: 'accountId' })
   account: Account;
+
+  @Column({ nullable: true })
+  accountId: number;
 
   @ManyToOne(() => Category, category => category.records, {
     nullable: false,
@@ -66,4 +69,7 @@ export class Record extends BaseEntity {
     comment: '记账日期'
   })
   recordDate: Date;
+  
+  @Column('simple-array', { nullable: true })
+  images: string[];
 }

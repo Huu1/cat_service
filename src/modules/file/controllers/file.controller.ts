@@ -12,7 +12,8 @@ import {
   UseGuards,
   Req,
   ParseIntPipe,
-  BadRequestException
+  BadRequestException,
+  HttpCode
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
@@ -31,6 +32,7 @@ export class FileController {
 
   @Post('upload')
   @UseGuards(JwtAuthGuard)
+  
   @ApiBearerAuth()
   @ApiOperation({ summary: '上传单个文件' })
   @ApiConsumes('multipart/form-data')
@@ -68,6 +70,7 @@ export class FileController {
       },
     }),
   )
+  @HttpCode(200)
   async uploadFile(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
     if (!file) {
       throw new BadRequestException('请选择要上传的文件');
@@ -87,6 +90,7 @@ export class FileController {
   @ApiBearerAuth()
   @ApiOperation({ summary: '上传多个文件' })
   @ApiConsumes('multipart/form-data')
+  @HttpCode(200)
   @ApiBody({
     schema: {
       type: 'object',

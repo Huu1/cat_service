@@ -17,9 +17,10 @@ export class DictItem extends BaseEntity {
   label: string;
 
   @Column({
+    unique: false,
     nullable: false,
-    length: 255,
-    comment: '附加数据',
+    length: 300,
+    comment: '分类名称',
   })
   value: string;
 

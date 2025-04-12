@@ -611,7 +611,8 @@ export class StatisticsService {
       .createQueryBuilder('record')
       .leftJoinAndSelect('record.account', 'account')
       .where('record.user.id = :userId', { userId })
-      .andWhere('record.recordDate <= :endDate', { endDate });
+      .andWhere('record.recordDate <= :endDate', { endDate })
+      .andWhere('record.account IS NOT NULL'); // 只查询有账户关联的记录
 
     // 添加账本筛选
     if (bookIds && bookIds.length > 0) {
@@ -646,6 +647,7 @@ export class StatisticsService {
         // 注意：这里假设account.balance是最新余额，需要反向计算历史余额
         const futureRecords = allRecords.filter(
           (record) =>
+            record.account && // 确保记录有关联账户
             record.account.id === account.id &&
             new Date(record.recordDate) > new Date(currentDate),
         );

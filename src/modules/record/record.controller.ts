@@ -30,15 +30,17 @@ export class RecordController {
   @ApiResponse({ status: 404, description: '记录不存在（更新时）' })
   async createOrUpdate(
     @CurrentUser() user: JwtPayload,
-    @Body() recordDto: CreateRecordDto & { id?: number }
+    @Body() recordDto: CreateRecordDto & { id?: number, images?: string[] }
   ) {
-    // 获取账户信息
-    const account = await this.recordService.getAccount(user.userId, recordDto.accountId);
-    
-    // 如果是信用账户，调整金额计算方式
-    if (['CREDIT', 'PAYABLE'].includes(account.type)) {
-      // 对于信用账户，收入（还款）和支出（消费）的金额需要反转
-      recordDto.amount = Math.abs(recordDto.amount); // 确保金额为正数
+    // 如果提供了账户ID，则获取账户信息并处理
+    if (recordDto.accountId) {
+      const account = await this.recordService.getAccount(user.userId, recordDto.accountId);
+      
+      // 如果是信用账户，调整金额计算方式
+      if (['CREDIT', 'PAYABLE'].includes(account.type)) {
+        // 对于信用账户，收入（还款）和支出（消费）的金额需要反转
+        recordDto.amount = Math.abs(recordDto.amount); // 确保金额为正数
+      }
     }
 
     if (recordDto.id) {

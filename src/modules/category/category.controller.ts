@@ -5,6 +5,7 @@ import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Query } from '@nestjs/common';
 import { QueryCategoryDto } from './dto/query-category.dto';
+import { Permissions } from '../auth/decorators/permissions.decorator';
 
 @ApiTags('分类')
 @Controller('categories')
@@ -42,6 +43,7 @@ export class CategoryController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
+  @Permissions('category:delete')
   @ApiOperation({ summary: '删除分类' })
   remove(@Param('id') id: string) {
     return this.categoryService.remove(+id);

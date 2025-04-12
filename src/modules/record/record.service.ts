@@ -42,30 +42,34 @@ export class RecordService {
         );
       }
 
-      // 检查并更新账户余额
-      const account = await manager.findOne(Account, {
-        where: { id: accountId, user: { id: userId } },
-      });
+      // 如果提供了账户ID，则更新账户余额
+      let account = null;
+      if (accountId) {
+        // 检查并更新账户余额
+        account = await manager.findOne(Account, {
+          where: { id: accountId, user: { id: userId } },
+        });
 
-      if (!account) {
-        throw new BusinessException(BusinessError.NOT_FOUND, '账户不存在');
+        if (!account) {
+          throw new BusinessException(BusinessError.NOT_FOUND, '账户不存在');
+        }
+
+        // 计算新余额，根据账户类型处理
+        let amountChange;
+        
+        // 对于信用类账户（如信用卡），收入表示还款（减少负债），支出表示消费（增加负债）
+        if (['CREDIT', 'PAYABLE'].includes(account.type)) {
+          amountChange = type === 'income' ? -amount : amount;
+        } else {
+          // 对于资产类账户，收入增加余额，支出减少余额
+          amountChange = type === 'income' ? amount : -amount;
+        }
+
+        const newBalance = Number(account.balance) + amountChange;
+
+        // 更新账户余额
+        await manager.update(Account, accountId, { balance: newBalance });
       }
-
-      // 计算新余额，根据账户类型处理
-      let amountChange;
-      
-      // 对于信用类账户（如信用卡），收入表示还款（减少负债），支出表示消费（增加负债）
-      if (['CREDIT', 'PAYABLE'].includes(account.type)) {
-        amountChange = type === 'income' ? -amount : amount;
-      } else {
-        // 对于资产类账户，收入增加余额，支出减少余额
-        amountChange = type === 'income' ? amount : -amount;
-      }
-
-      const newBalance = Number(account.balance) + amountChange;
-
-      // 更新账户余额
-      await manager.update(Account, accountId, { balance: newBalance });
 
       // 创建记录
       const record = manager.create(Record, {
@@ -74,7 +78,7 @@ export class RecordService {
         amount,    // 添加 amount
         user: { id: userId },
         book: { id: bookId },
-        account: { id: accountId },
+        account: accountId ? { id: accountId } : null,
         category: { id: categoryId },
       });
 
@@ -131,21 +135,16 @@ export class RecordService {
     const { bookId, accountId, categoryId, ...updateData } = updateRecordDto;
 
     return await this.dataSource.transaction(async (manager) => {
-      // 如果金额或类型发生变化，需要调整账户余额
-      if (
+      // 如果记录原来有账户，并且金额或类型发生变化，或者账户发生变化，需要调整账户余额
+      if (record.account && (
         updateData.amount !== record.amount ||
         updateData.type !== record.type ||
-        accountId !== record.account.id
-      ) {
+        accountId !== (record.account?.id || null)
+      )) {
         // 获取原账户信息
         const oldAccount = await manager.findOne(Account, {
           where: { id: record.account.id },
         });
-
-        // 获取新账户信息（如果有变更）
-        const newAccount = accountId
-          ? await manager.findOne(Account, { where: { id: accountId } })
-          : oldAccount;
 
         // 恢复原账户余额
         const oldAmountChange = ['CREDIT', 'PAYABLE'].includes(oldAccount.type)
@@ -159,14 +158,39 @@ export class RecordService {
           oldAmountChange,
         );
 
-        // 设置新账户余额
+        // 如果新记录也有账户，设置新账户余额
+        if (accountId) {
+          // 获取新账户信息
+          const newAccount = await manager.findOne(Account, { 
+            where: { id: accountId } 
+          });
+
+          const newAmountChange = ['CREDIT', 'PAYABLE'].includes(newAccount.type)
+            ? (updateData.type === 'income' ? -updateData.amount : updateData.amount)
+            : (updateData.type === 'income' ? updateData.amount : -updateData.amount);
+
+          await manager.increment(
+            Account,
+            { id: accountId },
+            'balance',
+            newAmountChange,
+          );
+        }
+      } 
+      // 如果记录原来没有账户，但新记录有账户
+      else if (!record.account && accountId) {
+        // 获取新账户信息
+        const newAccount = await manager.findOne(Account, { 
+          where: { id: accountId } 
+        });
+
         const newAmountChange = ['CREDIT', 'PAYABLE'].includes(newAccount.type)
           ? (updateData.type === 'income' ? -updateData.amount : updateData.amount)
           : (updateData.type === 'income' ? updateData.amount : -updateData.amount);
 
         await manager.increment(
           Account,
-          { id: accountId || record.account.id },
+          { id: accountId },
           'balance',
           newAmountChange,
         );
@@ -176,7 +200,7 @@ export class RecordService {
         ...record,
         ...updateData,
         book: bookId ? { id: bookId } : record.book,
-        account: accountId ? { id: accountId } : record.account,
+        account: accountId ? { id: accountId } : null,
         category: categoryId ? { id: categoryId } : record.category,
       });
     });
@@ -186,22 +210,25 @@ export class RecordService {
     const record = await this.findOne(userId, id);
 
     return await this.dataSource.transaction(async (manager) => {
-      // 获取账户信息
-      const account = await manager.findOne(Account, {
-        where: { id: record.account.id },
-      });
+      // 如果记录有关联账户，恢复账户余额
+      if (record.account) {
+        // 获取账户信息
+        const account = await manager.findOne(Account, {
+          where: { id: record.account.id },
+        });
 
-      // 恢复账户余额
-      const amountChange = ['CREDIT', 'PAYABLE'].includes(account.type)
-        ? (record.type === 'income' ? record.amount : -record.amount)
-        : (record.type === 'income' ? -record.amount : record.amount);
+        // 恢复账户余额
+        const amountChange = ['CREDIT', 'PAYABLE'].includes(account.type)
+          ? (record.type === 'income' ? record.amount : -record.amount)
+          : (record.type === 'income' ? -record.amount : record.amount);
 
-      await manager.increment(
-        Account,
-        { id: record.account.id },
-        'balance',
-        amountChange,
-      );
+        await manager.increment(
+          Account,
+          { id: record.account.id },
+          'balance',
+          amountChange,
+        );
+      }
 
       return await manager.softRemove(record);
     });

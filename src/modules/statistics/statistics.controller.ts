@@ -71,7 +71,18 @@ export class StatisticsController {
     @CurrentUser() user: JwtPayload,
     @Body() query: RangeStatisticsQueryDto
   ) {
-    return this.statisticsService.getAssetsTrend(user.userId, query);
+    try {
+      return await this.statisticsService.getAssetsTrend(user.userId, query);
+    } catch (error) {
+      // 处理没有账户的情况
+      console.error('资产负债趋势统计错误:', error);
+      return {
+        dates: [],
+        assets: [],
+        liabilities: [],
+        netAssets: []
+      };
+    }
   }
 
 

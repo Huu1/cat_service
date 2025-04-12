@@ -10,8 +10,10 @@ export class File extends BaseEntity {
   originalName: string;
 
   @Column({
-    nullable: true,
-    length: 200,
+    unique: false,
+    nullable: false,
+    length: 100,
+    comment: '文件名称',
   })
   fileName: string;
 
